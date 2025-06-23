@@ -16,16 +16,16 @@ import {
 import { Tokenizer } from './tokenizer.js';
 import { SchemaParser, validateSchemaDefinition } from './schema-parser.js';
 import { DataParser, validateDataEntries } from './data-parser.js';
-import { DataTypeValidator } from './data-types.js';
+import { DataTypeConverter } from './data-types.js';
 import { createDefaultParseOptions, SchemaCache } from './utils.js';
 
 export class MarkdownDataExtensionParser implements MarkdownDataParser {
   private schemaCache: SchemaCache;
-  private dataTypeValidator: DataTypeValidator;
+  private dataTypeConverter: DataTypeConverter;
 
   constructor() {
     this.schemaCache = new SchemaCache();
-    this.dataTypeValidator = new DataTypeValidator();
+    this.dataTypeConverter = new DataTypeConverter();
   }
 
   parse(markdown: string, options?: ParseOptions): ParseResult {
@@ -129,22 +129,20 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
   validateData(data: DataEntry[], schema: DataSchema): ValidationResult {
     const errors: import('./types.js').ParseError[] = [];
     
-    // Structural validation
+    // Only basic structural validation (parser-level errors)
     errors.push(...validateDataEntries(data, schema));
     
-    // Type and format validation
+    // Convert data types without validation
     for (const entry of data) {
       const schemaFields = new Map(schema.fields.map(f => [f.name, f]));
       
       for (const [fieldName, value] of entry.fields) {
         const field = schemaFields.get(fieldName);
         if (field) {
-          const fieldErrors = this.dataTypeValidator.validateValue(value, field);
-          for (const error of fieldErrors) {
-            error.lineNumber = entry.lineNumber;
-            error.schemaName = entry.schemaName;
-            errors.push(error);
-          }
+          // Convert the value but don't validate it
+          const convertedValue = this.dataTypeConverter.convertValue(value, field);
+          // Update the entry with converted value
+          entry.fields.set(fieldName, convertedValue);
         }
       }
     }
@@ -252,9 +250,7 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
       state.schemas.set(blockInfo.schemaName, result.schema);
       this.schemaCache.set(blockInfo.schemaName, result.schema);
       
-      // Additional validation
-      const validationErrors = validateSchemaDefinition(result.schema);
-      state.errors.push(...validationErrors);
+      // No additional validation - schema parsing handles structural errors
     }
     
     state.errors.push(...result.errors);

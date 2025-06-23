@@ -135,8 +135,8 @@ export class SchemaParser {
       const key = component.substring(0, colonIndex).trim();
       let value = component.substring(colonIndex + 1).trim();
 
-      // Handle multi-component values (like validation rules)
-      if (key === 'valid' && value.startsWith('{') && !value.endsWith('}')) {
+      // Handle multi-component values (like validation rules and dual formats)
+      if ((key === 'valid' || key === 'format') && value.startsWith('{') && !value.endsWith('}')) {
         // Collect remaining components until we find the closing brace
         for (let j = i + 1; j < components.length; j++) {
           value += ',' + components[j];
