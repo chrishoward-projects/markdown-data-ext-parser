@@ -272,11 +272,31 @@ Example:
     </div>
 
     <script type="module">
-        // Import the parser from the built module
-        import { MarkdownDataExtensionParser, DataType, ErrorType } from './dist/index.mjs';
+        try {
+            // Import the parser from the built module
+            const { MarkdownDataExtensionParser, DataType, ErrorType } = await import('./dist/index.mjs');
 
-        // Create parser instance
-        window.parser = new MarkdownDataExtensionParser();
+            // Create parser instance
+            window.parser = new MarkdownDataExtensionParser();
+            window.parserReady = true;
+        } catch (error) {
+            console.error('Failed to load ES module:', error);
+            window.parserReady = false;
+            
+            // Show error message to user
+            document.addEventListener('DOMContentLoaded', function() {
+                const status = document.getElementById('status');
+                if (status) {
+                    status.innerHTML = `
+                        <div style="background: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 4px; color: #721c24; margin: 10px 0;">
+                            <strong>⚠️ Module Loading Failed</strong><br>
+                            This test page requires serving from an HTTP server due to CORS restrictions.<br>
+                            <strong>Solution:</strong> Run <code>python -m http.server 8000</code> in this directory and open <a href="http://localhost:8000/test.html">http://localhost:8000/test.html</a>
+                        </div>
+                    `;
+                }
+            });
+        }
 
         // Global functions for buttons
         window.loadDefaultExample = function() {
@@ -348,6 +368,11 @@ Our current team members:
         };
 
         window.parseMarkdown = function() {
+            if (!window.parserReady) {
+                updateStatus('Parser not ready - please serve from HTTP server', 'error');
+                return;
+            }
+
             const markdown = document.getElementById('markdownInput').value;
             if (!markdown.trim()) {
                 updateStatus('Please enter some markdown content', 'error');
@@ -385,6 +410,11 @@ Our current team members:
         };
 
         window.validateOnly = function() {
+            if (!window.parserReady) {
+                updateStatus('Parser not ready - please serve from HTTP server', 'error');
+                return;
+            }
+
             const markdown = document.getElementById('markdownInput').value;
             if (!markdown.trim()) {
                 updateStatus('Please enter some markdown content', 'error');

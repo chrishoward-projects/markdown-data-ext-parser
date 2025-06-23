@@ -51,6 +51,37 @@ console.log('Data entries:', result.data.get('employees')?.length);
 console.log('Errors:', result.errors.length);
 ```
 
+## Testing
+
+### Interactive HTML Test Interface
+
+The library includes an interactive HTML test interface for easy testing and experimentation:
+
+```bash
+# Option 1: Use the included Python server (recommended)
+python serve.py
+
+# Option 2: Use Python's built-in server
+python -m http.server 8000
+
+# Option 3: Use Node.js http-server
+npx http-server
+```
+
+Then open http://localhost:8000/test.html in your browser.
+
+**Features:**
+- Two-panel layout with markdown input and JSON output
+- Real-time parsing with live feedback
+- Default example loader with comprehensive demo data
+- Parse and validate-only modes
+- Copy to clipboard functionality
+- Comprehensive error reporting with line numbers
+- Parse metadata display (timing, counts, validation status)
+- Responsive design for mobile testing
+
+**Note:** The test interface requires serving from an HTTP server due to ES module CORS restrictions when opening files directly in the browser.
+
 ## API Reference
 
 ### Core Classes
