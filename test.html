@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Data Extension Parser - Test Interface</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            margin: 0 0 10px 0;
+        }
+
+        .header p {
+            color: #7f8c8d;
+            margin: 0;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            height: calc(100vh - 200px);
+        }
+
+        .panel {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            background: #34495e;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px 8px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-header h2 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .panel-content {
+            flex: 1;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #markdownInput {
+            flex: 1;
+            border: none;
+            resize: none;
+            padding: 20px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            outline: none;
+            background: #f8f9fa;
+            border-radius: 0 0 8px 8px;
+        }
+
+        #output {
+            flex: 1;
+            padding: 20px;
+            overflow: auto;
+            background: #f8f9fa;
+            border-radius: 0 0 8px 8px;
+        }
+
+        .controls {
+            padding: 15px 20px;
+            background: #ecf0f1;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background: #2980b9;
+        }
+
+        button.secondary {
+            background: #95a5a6;
+        }
+
+        button.secondary:hover {
+            background: #7f8c8d;
+        }
+
+        .status {
+            margin-left: auto;
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        .status.success {
+            color: #27ae60;
+        }
+
+        .status.error {
+            color: #e74c3c;
+        }
+
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .json-output {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 4px;
+            overflow: auto;
+        }
+
+        .metadata {
+            background: #e8f5e8;
+            border: 1px solid #d4edda;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .metadata h3 {
+            margin: 0 0 10px 0;
+            color: #155724;
+            font-size: 14px;
+        }
+
+        .metadata-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        .metadata-item {
+            font-size: 13px;
+        }
+
+        .metadata-label {
+            font-weight: 600;
+            color: #155724;
+        }
+
+        .errors {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .errors h3 {
+            margin: 0 0 10px 0;
+            color: #721c24;
+            font-size: 14px;
+        }
+
+        .error-item {
+            font-size: 13px;
+            margin-bottom: 8px;
+            padding: 8px;
+            background: white;
+            border-radius: 3px;
+            border-left: 3px solid #dc3545;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+            
+            .panel {
+                min-height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Markdown Data Extension Parser</h1>
+        <p>Test interface for parsing and validating Markdown Data Extension syntax</p>
+    </div>
+
+    <div class="container">
+        <div class="panel">
+            <div class="panel-header">
+                <h2>Markdown Input</h2>
+                <div class="controls">
+                    <button onclick="loadDefaultExample()">Load Example</button>
+                    <button onclick="clearInput()" class="secondary">Clear</button>
+                </div>
+            </div>
+            <div class="panel-content">
+                <textarea id="markdownInput" placeholder="Enter your Markdown with Data Extension syntax here...
+
+Example:
+!? datadef contacts
+!fname: name, type: text, required: true
+!fname: email, type: text, format: &quot;email&quot;
+!#
+
+!? data contacts
+| !name | !email |
+|-------|--------|
+| John  | john@example.com |
+!#"></textarea>
+            </div>
+            <div class="controls">
+                <button onclick="parseMarkdown()">Parse Markdown</button>
+                <button onclick="validateOnly()" class="secondary">Validate Only</button>
+                <span class="status" id="status">Ready</span>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <h2>Parse Results</h2>
+                <div class="controls">
+                    <button onclick="copyToClipboard()" class="secondary">Copy JSON</button>
+                </div>
+            </div>
+            <div class="panel-content">
+                <div id="output">
+                    <p style="text-align: center; color: #7f8c8d; margin-top: 50px;">
+                        Enter markdown and click "Parse Markdown" to see results
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import the parser from the built module
+        import { MarkdownDataExtensionParser, DataType, ErrorType } from './dist/index.mjs';
+
+        // Create parser instance
+        window.parser = new MarkdownDataExtensionParser();
+
+        // Global functions for buttons
+        window.loadDefaultExample = function() {
+            const defaultMarkdown = `# Employee Management System
+
+This document demonstrates the Markdown Data Extension with a comprehensive employee database.
+
+!? datadef employees
+!fname: id, type: number, label: "Employee ID", required: true
+!fname: name, type: text, label: "Full Name", required: true, valid: {min: 2, max: 50}
+!fname: email, type: text, format: "email", required: true
+!fname: department, type: text, valid: {options: ["Engineering", "Sales", "HR", "Marketing", "Finance"]}
+!fname: salary, type: number, format: "$n,n.##", valid: {min: 30000, max: 300000}
+!fname: start_date, type: date, format: {"DD/MM/YYYY", "MMM DD, YYYY"}
+!fname: active, type: boolean, format: "y/n"
+!fname: skills, type: text, format: "title"
+!index: "id"
+!index: "department+active"
+!#
+
+## Employee Records
+
+Our current team members:
+
+!? data employees
+| !id | !name | !email | !department | !salary | !start_date | !active | !skills |
+|-----|-------|--------|-------------|---------|-------------|---------|---------|
+| 1 | John Smith | john.smith@company.com | Engineering | 95000 | 15/03/2020 | true | javascript, typescript |
+| 2 | Jane Doe | jane.doe@company.com | Sales | 75000 | 22/07/2021 | true | communication, negotiation |
+| 3 | Bob Johnson | bob.johnson@company.com | HR | 65000 | 10/11/2019 | false | recruiting, training |
+| 4 | Alice Wilson | alice.wilson@company.com | Marketing | 70000 | 05/01/2022 | true | digital marketing, analytics |
+| 5 | Charlie Brown | charlie.brown@company.com | Finance | 80000 | 12/09/2020 | true | accounting, financial analysis |
+!#
+
+## Additional Employee Data (Free-form)
+
+!? data employees
+!id 6
+!name Diana Prince
+!email diana.prince@company.com
+!department Engineering
+!salary 110000
+!start_date 01/06/2023
+!active true
+!skills leadership, architecture
+!-
+!id 7
+!name Peter Parker
+!email peter.parker@company.com
+!department Marketing
+!salary 68000
+!start_date 15/08/2023
+!active true
+!skills social media, content creation
+!#
+
+---
+
+*This data is managed using the Markdown Data Extension format for maximum readability and version control compatibility.*`;
+
+            document.getElementById('markdownInput').value = defaultMarkdown;
+            parseMarkdown();
+        };
+
+        window.clearInput = function() {
+            document.getElementById('markdownInput').value = '';
+            document.getElementById('output').innerHTML = '<p style="text-align: center; color: #7f8c8d; margin-top: 50px;">Enter markdown and click "Parse Markdown" to see results</p>';
+            updateStatus('Ready', '');
+        };
+
+        window.parseMarkdown = function() {
+            const markdown = document.getElementById('markdownInput').value;
+            if (!markdown.trim()) {
+                updateStatus('Please enter some markdown content', 'error');
+                return;
+            }
+
+            try {
+                updateStatus('Parsing...', '');
+                const startTime = performance.now();
+                
+                const result = window.parser.parse(markdown, { 
+                    validateData: true,
+                    loadExternalSchemas: false 
+                });
+                
+                const endTime = performance.now();
+                const parseTime = Math.round(endTime - startTime);
+
+                displayResults(result, parseTime);
+                updateStatus(\`Parsed successfully in \${parseTime}ms\`, 'success');
+            } catch (error) {
+                console.error('Parse error:', error);
+                updateStatus(\`Parse failed: \${error.message}\`, 'error');
+                
+                document.getElementById('output').innerHTML = \`
+                    <div class="errors">
+                        <h3>Parse Error</h3>
+                        <div class="error-item">
+                            <strong>Error:</strong> \${error.message}<br>
+                            <strong>Stack:</strong> <pre>\${error.stack}</pre>
+                        </div>
+                    </div>
+                \`;
+            }
+        };
+
+        window.validateOnly = function() {
+            const markdown = document.getElementById('markdownInput').value;
+            if (!markdown.trim()) {
+                updateStatus('Please enter some markdown content', 'error');
+                return;
+            }
+
+            try {
+                updateStatus('Validating...', '');
+                
+                const result = window.parser.parse(markdown, { 
+                    validateData: true,
+                    loadExternalSchemas: false 
+                });
+                
+                const hasErrors = result.errors.length > 0;
+                const hasWarnings = result.warnings.length > 0;
+                
+                let output = '<div style="padding: 20px;">';
+                
+                if (!hasErrors && !hasWarnings) {
+                    output += '<div style="background: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 4px; color: #155724;"><strong>✓ Validation Passed</strong><br>No errors or warnings found.</div>';
+                } else {
+                    if (hasErrors) {
+                        output += '<div class="errors"><h3>❌ Validation Errors (\${result.errors.length})</h3>';
+                        result.errors.forEach(error => {
+                            output += \`<div class="error-item">
+                                <strong>Line \${error.lineNumber || 'unknown'}:</strong> \${error.message}<br>
+                                <small>Type: \${error.type}\${error.fieldName ? ', Field: ' + error.fieldName : ''}\${error.schemaName ? ', Schema: ' + error.schemaName : ''}</small>
+                            </div>\`;
+                        });
+                        output += '</div>';
+                    }
+                    
+                    if (hasWarnings) {
+                        output += '<div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 4px; margin-bottom: 15px;"><h3>⚠️ Warnings (\${result.warnings.length})</h3>';
+                        result.warnings.forEach(warning => {
+                            output += \`<div style="margin-bottom: 8px;">
+                                <strong>Line \${warning.lineNumber || 'unknown'}:</strong> \${warning.message}
+                            </div>\`;
+                        });
+                        output += '</div>';
+                    }
+                }
+                
+                output += '</div>';
+                
+                document.getElementById('output').innerHTML = output;
+                updateStatus(\`Validation complete: \${result.errors.length} errors, \${result.warnings.length} warnings\`, hasErrors ? 'error' : 'success');
+            } catch (error) {
+                console.error('Validation error:', error);
+                updateStatus(\`Validation failed: \${error.message}\`, 'error');
+            }
+        };
+
+        window.copyToClipboard = function() {
+            const output = document.querySelector('.json-output pre');
+            if (output) {
+                navigator.clipboard.writeText(output.textContent).then(() => {
+                    updateStatus('JSON copied to clipboard', 'success');
+                });
+            }
+        };
+
+        function updateStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'status' + (type ? ' ' + type : '');
+        }
+
+        function displayResults(result, parseTime) {
+            let output = '';
+
+            // Metadata
+            output += \`
+                <div class="metadata">
+                    <h3>📊 Parse Metadata</h3>
+                    <div class="metadata-grid">
+                        <div class="metadata-item"><span class="metadata-label">Parse Time:</span> \${parseTime}ms</div>
+                        <div class="metadata-item"><span class="metadata-label">Total Lines:</span> \${result.metadata.totalLines}</div>
+                        <div class="metadata-item"><span class="metadata-label">Schemas Found:</span> \${result.metadata.schemasFound}</div>
+                        <div class="metadata-item"><span class="metadata-label">Data Entries:</span> \${result.metadata.dataEntriesFound}</div>
+                        <div class="metadata-item"><span class="metadata-label">Errors:</span> \${result.errors.length}</div>
+                        <div class="metadata-item"><span class="metadata-label">Warnings:</span> \${result.warnings.length}</div>
+                    </div>
+                </div>
+            \`;
+
+            // Errors
+            if (result.errors.length > 0) {
+                output += \`
+                    <div class="errors">
+                        <h3>❌ Errors (\${result.errors.length})</h3>
+                \`;
+                result.errors.forEach(error => {
+                    output += \`
+                        <div class="error-item">
+                            <strong>Line \${error.lineNumber || 'unknown'}:</strong> \${error.message}<br>
+                            <small>Type: \${error.type}\${error.fieldName ? ', Field: ' + error.fieldName : ''}\${error.schemaName ? ', Schema: ' + error.schemaName : ''}</small>
+                        </div>
+                    \`;
+                });
+                output += '</div>';
+            }
+
+            // Convert result to a clean JSON structure
+            const cleanResult = {
+                metadata: result.metadata,
+                schemas: Array.from(result.schemas.entries()).map(([name, schema]) => ({
+                    name,
+                    fields: schema.fields,
+                    indexes: schema.indexes,
+                    sourcePath: schema.sourcePath
+                })),
+                data: Array.from(result.data.entries()).map(([schemaName, entries]) => ({
+                    schemaName,
+                    entries: entries.map(entry => ({
+                        fields: Object.fromEntries(entry.fields),
+                        lineNumber: entry.lineNumber,
+                        recordIndex: entry.recordIndex
+                    }))
+                })),
+                errors: result.errors,
+                warnings: result.warnings
+            };
+
+            // JSON Output
+            output += \`
+                <div class="json-output">
+                    <pre>\${JSON.stringify(cleanResult, null, 2)}</pre>
+                </div>
+            \`;
+
+            document.getElementById('output').innerHTML = output;
+        }
+
+        // Auto-parse on input changes (with debouncing)
+        let parseTimeout;
+        document.getElementById('markdownInput').addEventListener('input', function() {
+            clearTimeout(parseTimeout);
+            parseTimeout = setTimeout(() => {
+                if (this.value.trim()) {
+                    parseMarkdown();
+                }
+            }, 1000);
+        });
+
+        // Load default example on page load
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                loadDefaultExample();
+            }, 500);
+        });
+    </script>
+</body>
+</html>
