@@ -16,6 +16,12 @@ export default [
         file: 'dist/index.mjs',
         format: 'es',
         sourcemap: true
+      },
+      {
+        file: 'dist/index.umd.js',
+        format: 'umd',
+        name: 'MarkdownDataExtensionParser',
+        sourcemap: true
       }
     ],
     external,

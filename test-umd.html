@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Data Extension Parser - UMD Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            height: calc(100vh - 140px);
+        }
+
+        .panel {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8f9fa;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .panel-header h2 {
+            font-size: 18px;
+            color: #2c3e50;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .controls button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+
+        .controls button:not(.secondary) {
+            background: #3498db;
+            color: white;
+        }
+
+        .controls button:not(.secondary):hover {
+            background: #2980b9;
+        }
+
+        .controls button.secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .controls button.secondary:hover {
+            background: #7f8c8d;
+        }
+
+        .status {
+            font-size: 13px;
+            padding: 4px 8px;
+            border-radius: 3px;
+            margin-left: 10px;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .panel-content {
+            flex: 1;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        #markdownInput {
+            width: 100%;
+            height: 100%;
+            border: none;
+            resize: none;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            padding: 20px;
+            line-height: 1.5;
+            outline: none;
+        }
+
+        #output {
+            height: 100%;
+            overflow-y: auto;
+            padding: 20px;
+            font-size: 14px;
+        }
+
+        .json-output pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            line-height: 1.4;
+            overflow-x: auto;
+            border: 1px solid #e9ecef;
+        }
+
+        .metadata {
+            background: #e8f5e8;
+            border: 1px solid #c3e6cb;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+
+        .metadata h3 {
+            margin-bottom: 10px;
+            color: #155724;
+        }
+
+        .metadata-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .metadata-item {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .metadata-label {
+            font-weight: 600;
+        }
+
+        .errors {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+
+        .errors h3 {
+            margin-bottom: 10px;
+            color: #721c24;
+        }
+
+        .error-item {
+            margin-bottom: 10px;
+            padding: 8px;
+            background: rgba(255,255,255,0.5);
+            border-radius: 3px;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .copy-btn:hover {
+            background: #5a6268;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+            
+            .panel {
+                height: 400px;
+            }
+        }
+
+        .notice {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px;
+            color: #0c5460;
+        }
+
+        .notice strong {
+            color: #073642;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Markdown Data Extension Parser</h1>
+        <p>UMD Build Test - Direct HTML Integration</p>
+    </div>
+
+    <div class="notice">
+        <strong>📦 UMD Build Demo:</strong> This page demonstrates how to use the library directly in HTML without bundlers. 
+        The parser is loaded via UMD (Universal Module Definition) which works in browsers without ES module support.
+    </div>
+
+    <div class="container">
+        <div class="panel">
+            <div class="panel-header">
+                <h2>Markdown Input</h2>
+                <div class="controls">
+                    <button onclick="loadDefaultExample()">Load Example</button>
+                    <button onclick="clearInput()" class="secondary">Clear</button>
+                </div>
+            </div>
+            <div class="panel-content">
+                <textarea id="markdownInput" placeholder="Enter your Markdown with Data Extension syntax here...
+
+Example:
+!? datadef contacts
+!fname: name, type: text, required: true
+!fname: email, type: text, format: 'email'
+!fname: phone, type: text, format: '(##) #### ####'
+!#
+
+!? data contacts
+!name: John Smith
+!email: john@example.com
+!phone: (555) 123-4567
+!-
+!name: Jane Doe
+!email: jane@example.com
+!phone: (555) 987-6543
+!#"></textarea>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <h2>Parsed Output</h2>
+                <div class="controls">
+                    <button onclick="parseMarkdown()">Parse Markdown</button>
+                    <button onclick="validateOnly()" class="secondary">Validate Only</button>
+                    <span class="status" id="status">Ready</span>
+                </div>
+            </div>
+            <div class="panel-content">
+                <div id="output">
+                    <p style="text-align: center; color: #7f8c8d; margin-top: 50px;">Enter markdown and click "Parse Markdown" to see results</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- UMD Build - No bundler required -->
+    <script src="./dist/index.umd.js"></script>
+    <script>
+        // UMD exposes the library as MarkdownDataExtensionParser global
+        const parser = new MarkdownDataExtensionParser.MarkdownDataExtensionParser();
+
+        // Global functions for buttons
+        window.loadDefaultExample = function() {
+            const defaultMarkdown = `# Employee Management System
+
+Our employee database contains comprehensive information about team members across different departments.
+
+!? datadef employees
+!fname: employee_id, type: number, required: true, label: "Employee ID"
+!fname: name, type: text, required: true, label: "Full Name"
+!fname: email, type: text, format: "email", required: true, label: "Email Address"
+!fname: phone, type: text, format: "(##) #### ####", label: "Phone Number"
+!fname: department, type: text, required: true, label: "Department"
+!fname: position, type: text, required: true, label: "Job Position"
+!fname: salary, type: number, format: "currency", label: "Annual Salary"
+!fname: start_date, type: date, format: "MM/DD/YYYY", required: true, label: "Start Date"
+!fname: is_active, type: boolean, format: "yes/no", required: true, label: "Active Status"
+!fname: manager_id, type: number, label: "Manager ID"
+!#
+
+## Current Team Members
+
+Our current team members:
+
+!? data employees
+| !employee_id | !name | !email | !phone | !department | !position | !salary | !start_date | !is_active | !manager_id |
+|--------------|-------|--------|---------|-------------|-----------|---------|-------------|------------|-------------|
+| 1001 | Alice Johnson | alice.johnson@company.com | (555) 123-4567 | Engineering | Senior Developer | 95000 | 01/15/2020 | yes | 1005 |
+| 1002 | Bob Smith | bob.smith@company.com | (555) 234-5678 | Marketing | Marketing Manager | 75000 | 03/22/2021 | yes | 1006 |
+| 1003 | Carol Davis | carol.davis@company.com | (555) 345-6789 | Sales | Sales Representative | 55000 | 06/10/2022 | yes | 1007 |
+| 1004 | David Wilson | david.wilson@company.com | (555) 456-7890 | Engineering | Junior Developer | 65000 | 09/05/2022 | yes | 1005 |
+| 1005 | Eve Brown | eve.brown@company.com | (555) 567-8901 | Engineering | Engineering Manager | 120000 | 11/01/2019 | yes |  |
+| 1006 | Frank Miller | frank.miller@company.com | (555) 678-9012 | Marketing | Marketing Director | 110000 | 02/14/2020 | yes |  |
+| 1007 | Grace Lee | grace.lee@company.com | (555) 789-0123 | Sales | Sales Director | 105000 | 04/18/2020 | yes |  |
+!#
+
+## Additional Notes
+
+This database is updated monthly and includes all active employees. Salary information is confidential and used for HR purposes only.`;
+
+            document.getElementById('markdownInput').value = defaultMarkdown;
+            updateStatus('Default example loaded', 'success');
+        };
+
+        window.clearInput = function() {
+            document.getElementById('markdownInput').value = '';
+            document.getElementById('output').innerHTML = '<p style="text-align: center; color: #7f8c8d; margin-top: 50px;">Enter markdown and click "Parse Markdown" to see results</p>';
+            updateStatus('Ready', '');
+        };
+
+        // Parse function
+        window.parseMarkdown = function() {
+            const markdown = document.getElementById('markdownInput').value;
+            if (!markdown.trim()) {
+                updateStatus('Please enter some markdown content', 'error');
+                return;
+            }
+
+            try {
+                updateStatus('Parsing...', '');
+                const startTime = performance.now();
+                
+                const result = parser.parse(markdown, { 
+                    validateData: true,
+                    loadExternalSchemas: false 
+                });
+                
+                const endTime = performance.now();
+                const parseTime = Math.round(endTime - startTime);
+
+                displayResults(result, parseTime);
+                updateStatus(`Parsed successfully in ${parseTime}ms`, 'success');
+            } catch (error) {
+                console.error('Parse error:', error);
+                updateStatus(`Parse failed: ${error.message}`, 'error');
+                
+                document.getElementById('output').innerHTML = `
+                    <div class="errors">
+                        <h3>Parse Error</h3>
+                        <div class="error-item">
+                            <strong>Error:</strong> ${error.message}<br>
+                            <strong>Stack:</strong> <pre>${error.stack}</pre>
+                        </div>
+                    </div>
+                `;
+            }
+        };
+
+        // Validate-only function
+        window.validateOnly = function() {
+            const markdown = document.getElementById('markdownInput').value;
+            if (!markdown.trim()) {
+                updateStatus('Please enter some markdown content', 'error');
+                return;
+            }
+
+            try {
+                updateStatus('Validating...', '');
+                
+                const result = parser.parse(markdown, { 
+                    validateData: true,
+                    loadExternalSchemas: false 
+                });
+                
+                let output = '<div style="padding: 15px;">';
+                
+                const hasErrors = result.errors.length > 0;
+                const hasWarnings = result.warnings.length > 0;
+                
+                if (!hasErrors && !hasWarnings) {
+                    output += '<div style="background: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 4px; color: #155724;"><strong>✓ Validation Passed</strong><br>No errors or warnings found.</div>';
+                } else {
+                    if (hasErrors) {
+                        output += `<div class="errors"><h3>❌ Validation Errors (${result.errors.length})</h3>`;
+                        result.errors.forEach(error => {
+                            output += `<div class="error-item">
+                                <strong>Line ${error.lineNumber || 'unknown'}:</strong> ${error.message}<br>
+                                <small>Type: ${error.type}${error.fieldName ? ', Field: ' + error.fieldName : ''}${error.schemaName ? ', Schema: ' + error.schemaName : ''}</small>
+                            </div>`;
+                        });
+                        output += '</div>';
+                    }
+                    
+                    if (hasWarnings) {
+                        output += `<div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 4px; margin-bottom: 15px;"><h3>⚠️ Warnings (${result.warnings.length})</h3>`;
+                        result.warnings.forEach(warning => {
+                            output += `<div style="margin-bottom: 8px;">
+                                <strong>Line ${warning.lineNumber || 'unknown'}:</strong> ${warning.message}
+                            </div>`;
+                        });
+                        output += '</div>';
+                    }
+                }
+                
+                output += '</div>';
+                
+                document.getElementById('output').innerHTML = output;
+                updateStatus(`Validation complete: ${result.errors.length} errors, ${result.warnings.length} warnings`, hasErrors ? 'error' : 'success');
+            } catch (error) {
+                console.error('Validation error:', error);
+                updateStatus(`Validation failed: ${error.message}`, 'error');
+            }
+        };
+
+        // Display results function
+        function displayResults(result, parseTime) {
+            let output = '';
+
+            // Metadata
+            output += `
+                <div class="metadata">
+                    <h3>📊 Parse Metadata</h3>
+                    <div class="metadata-grid">
+                        <div class="metadata-item"><span class="metadata-label">Parse Time:</span> ${parseTime}ms</div>
+                        <div class="metadata-item"><span class="metadata-label">Total Lines:</span> ${result.metadata.totalLines}</div>
+                        <div class="metadata-item"><span class="metadata-label">Schemas Found:</span> ${result.metadata.schemasFound}</div>
+                        <div class="metadata-item"><span class="metadata-label">Data Entries:</span> ${result.metadata.dataEntriesFound}</div>
+                        <div class="metadata-item"><span class="metadata-label">Errors:</span> ${result.errors.length}</div>
+                        <div class="metadata-item"><span class="metadata-label">Warnings:</span> ${result.warnings.length}</div>
+                    </div>
+                </div>
+            `;
+
+            // Errors
+            if (result.errors.length > 0) {
+                output += `
+                    <div class="errors">
+                        <h3>❌ Errors (${result.errors.length})</h3>
+                `;
+                result.errors.forEach(error => {
+                    output += `
+                        <div class="error-item">
+                            <strong>Line ${error.lineNumber || 'unknown'}:</strong> ${error.message}<br>
+                            <small>Type: ${error.type}${error.fieldName ? ', Field: ' + error.fieldName : ''}${error.schemaName ? ', Schema: ' + error.schemaName : ''}</small>
+                        </div>
+                    `;
+                });
+                output += '</div>';
+            }
+
+            // Clean result for JSON display
+            const cleanResult = {
+                schemas: Array.from(result.schemas.entries()).map(([name, schema]) => ({
+                    name,
+                    fields: schema.fields,
+                    indexes: schema.indexes
+                })),
+                data: Array.from(result.data.entries()).map(([schemaName, entries]) => ({
+                    schemaName,
+                    entries: entries.map(entry => entry.fields)
+                })),
+                metadata: result.metadata,
+                errors: result.errors,
+                warnings: result.warnings
+            };
+
+            // JSON Output
+            output += `
+                <div class="json-output" style="position: relative;">
+                    <button class="copy-btn" onclick="copyToClipboard()">Copy JSON</button>
+                    <pre id="jsonOutput">${JSON.stringify(cleanResult, null, 2)}</pre>
+                </div>
+            `;
+
+            document.getElementById('output').innerHTML = output;
+        }
+
+        // Copy to clipboard function
+        window.copyToClipboard = function() {
+            const jsonOutput = document.getElementById('jsonOutput');
+            if (jsonOutput) {
+                navigator.clipboard.writeText(jsonOutput.textContent).then(() => {
+                    updateStatus('JSON copied to clipboard', 'success');
+                }).catch(err => {
+                    updateStatus('Failed to copy JSON', 'error');
+                });
+            }
+        };
+
+        // Update status function
+        function updateStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'status ' + type;
+        }
+
+        // Auto-parse on input changes (with debouncing)
+        let parseTimeout;
+        document.getElementById('markdownInput').addEventListener('input', function() {
+            clearTimeout(parseTimeout);
+            parseTimeout = setTimeout(() => {
+                if (this.value.trim()) {
+                    parseMarkdown();
+                }
+            }, 1000);
+        });
+
+        // Load default example on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                loadDefaultExample();
+            }, 100);
+        });
+    </script>
+</body>
+</html>

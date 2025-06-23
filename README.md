@@ -53,34 +53,61 @@ console.log('Errors:', result.errors.length);
 
 ## Testing
 
-### Interactive HTML Test Interface
+### Interactive HTML Test Interfaces
 
-The library includes an interactive HTML test interface for easy testing and experimentation:
+The library includes two test interfaces for different integration scenarios:
+
+#### 1. ES Module Test Interface (test.html)
+Modern interface using ES modules (recommended for development):
 
 ```bash
-# Option 1: Use the included Python server (recommended)
+# Serve from HTTP server (required for ES modules)
 python serve.py
-
-# Option 2: Use Python's built-in server
+# or
 python -m http.server 8000
-
-# Option 3: Use Node.js http-server
-npx http-server
 ```
 
-Then open http://localhost:8000/test.html in your browser.
+Then open http://localhost:8000/test.html
 
-**Features:**
+#### 2. UMD Test Interface (test-umd.html)
+Alternative interface using UMD build (works directly in browser):
+
+```bash
+# Can open directly in browser (no server required)
+open test-umd.html
+# or serve from HTTP server
+python serve.py
+```
+
+Then open http://localhost:8000/test-umd.html
+
+**Both interfaces feature:**
 - Two-panel layout with markdown input and JSON output
-- Real-time parsing with live feedback
+- Real-time parsing with live feedback and auto-parsing
 - Default example loader with comprehensive demo data
-- Parse and validate-only modes
-- Copy to clipboard functionality
-- Comprehensive error reporting with line numbers
+- Parse and validate-only modes for different testing scenarios
+- Copy to clipboard functionality for parsed JSON output
+- Comprehensive error reporting with line numbers and context
 - Parse metadata display (timing, counts, validation status)
 - Responsive design for mobile testing
 
-**Note:** The test interface requires serving from an HTTP server due to ES module CORS restrictions when opening files directly in the browser.
+### Integration Methods
+
+**For bundled applications (Webpack, Vite, etc.):**
+```javascript
+import { MarkdownDataExtensionParser } from 'mdl-data-extension-parser';
+const parser = new MarkdownDataExtensionParser();
+```
+
+**For direct HTML usage (no bundler):**
+```html
+<script src="./node_modules/mdl-data-extension-parser/dist/index.umd.js"></script>
+<script>
+  const parser = new MarkdownDataExtensionParser.MarkdownDataExtensionParser();
+</script>
+```
+
+**Note:** The ES module test interface requires serving from an HTTP server due to browser CORS restrictions when opening files directly with `file://` protocol. This only affects the test setup - real applications using bundlers or proper HTTP servers won't encounter this issue.
 
 ## API Reference
 
