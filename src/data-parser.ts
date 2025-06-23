@@ -156,7 +156,7 @@ export class DataParser {
       const fieldName = headers[i];
       const value = cells[i] || '';
       
-      if (value.length > 0) {
+      if (fieldName && value.length > 0) {
         fields.set(fieldName, value);
       }
     }
