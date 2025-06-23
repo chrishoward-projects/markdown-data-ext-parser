@@ -1,0 +1,431 @@
+import { MarkdownDataExtensionParser } from '../parser';
+import { DataType, ErrorType } from '../types';
+import { writeFileSync, mkdirSync } from 'fs';
+import { join } from 'path';
+
+describe('MarkdownDataExtensionParser', () => {
+  let parser: MarkdownDataExtensionParser;
+
+  beforeEach(() => {
+    parser = new MarkdownDataExtensionParser();
+  });
+
+  describe('Schema parsing', () => {
+    it('should parse a complete schema definition', () => {
+      const markdown = `
+# Contact Schema
+
+!? datadef contacts
+!fname: name, type: text, label: "Full Name", required: true
+!fname: email, type: text, format: "email", required: true
+!fname: age, type: number, valid: {min: 0, max: 150}
+!fname: active, type: boolean, format: "y/n"
+!index: "name+email"
+!#
+
+This is regular markdown content.
+`;
+
+      const result = parser.parse(markdown);
+
+      expect(result.errors).toHaveLength(0);
+      expect(result.schemas.size).toBe(1);
+      expect(result.schemas.has('contacts')).toBe(true);
+
+      const schema = result.schemas.get('contacts')!;
+      expect(schema.fields).toHaveLength(4);
+      expect(schema.indexes).toHaveLength(1);
+
+      const nameField = schema.fields.find(f => f.name === 'name');
+      expect(nameField).toBeDefined();
+      expect(nameField!.type).toBe(DataType.TEXT);
+      expect(nameField!.label).toBe('Full Name');
+      expect(nameField!.required).toBe(true);
+
+      const emailField = schema.fields.find(f => f.name === 'email');
+      expect(emailField!.format).toBe('email');
+
+      expect(schema.indexes[0].fields).toEqual(['name', 'email']);
+    });
+
+    it('should handle multiple schema definitions', () => {
+      const markdown = `
+!? datadef users
+!fname: username, type: text
+!fname: email, type: text
+!#
+
+!? datadef products
+!fname: name, type: text
+!fname: price, type: number
+!#
+`;
+
+      const result = parser.parse(markdown);
+
+      expect(result.errors).toHaveLength(0);
+      expect(result.schemas.size).toBe(2);
+      expect(result.schemas.has('users')).toBe(true);
+      expect(result.schemas.has('products')).toBe(true);
+    });
+  });
+
+  describe('Data parsing - tabular format', () => {
+    it('should parse tabular data format', () => {
+      const markdown = `
+!? datadef contacts
+!fname: name, type: text
+!fname: email, type: text
+!fname: age, type: number
+!#
+
+!? data contacts
+| !name | !email | !age |
+|-------|--------|------|
+| John Doe | john@example.com | 30 |
+| Jane Smith | jane@example.com | 25 |
+!#
+`;
+
+      const result = parser.parse(markdown);
+
+      expect(result.errors).toHaveLength(0);
+      expect(result.data.size).toBe(1);
+      expect(result.data.has('contacts')).toBe(true);
+
+      const entries = result.data.get('contacts')!;
+      expect(entries).toHaveLength(2);
+
+      expect(entries[0].fields.get('name')).toBe('John Doe');
+      expect(entries[0].fields.get('email')).toBe('john@example.com');
+      expect(entries[0].fields.get('age')).toBe('30');
+
+      expect(entries[1].fields.get('name')).toBe('Jane Smith');
+    });
+
+    it('should handle empty cells in tabular data', () => {
+      const markdown = `
+!? datadef contacts
+!fname: name, type: text
+!fname: email, type: text
+!fname: phone, type: text
+!#
+
+!? data contacts
+| !name | !email | !phone |
+|-------|--------|--------|
+| John | john@example.com | |
+| Jane |  | 555-1234 |
+!#
+`;
+
+      const result = parser.parse(markdown);
+
+      expect(result.errors).toHaveLength(0);
+      const entries = result.data.get('contacts')!;
+      
+      expect(entries[0].fields.has('phone')).toBe(false); // Empty cell not included
+      expect(entries[1].fields.has('email')).toBe(false); // Empty cell not included
+      expect(entries[1].fields.get('phone')).toBe('555-1234');
+    });
+  });
+
+  describe('Data parsing - free-form format', () => {
+    it('should parse free-form data format', () => {
+      const markdown = `
+!? datadef contacts
+!fname: name, type: text
+!fname: email, type: text
+!fname: age, type: number
+!#
+
+!? data contacts
+!name John Doe
+!email john@example.com
+!age 30
+!-
+!name Jane Smith
+!email jane@example.com
+!age 25
+!#
+`;
+
+      const result = parser.parse(markdown);
+
+      expect(result.errors).toHaveLength(0);
+      const entries = result.data.get('contacts')!;
+      expect(entries).toHaveLength(2);
+
+      expect(entries[0].fields.get('name')).toBe('John Doe');
+      expect(entries[1].fields.get('name')).toBe('Jane Smith');
+    });
+
+    it('should handle partial records in free-form format', () => {
+      const markdown = `
+!? datadef contacts
+!fname: name, type: text
+!fname: email, type: text
+!fname: phone, type: text
+!#
+
+!? data contacts
+!name John Doe
+!email john@example.com
+!-
+!name Jane Smith
+!phone 555-1234
+!#
+`;
+
+      const result = parser.parse(markdown);
+
+      expect(result.errors).toHaveLength(0);
+      const entries = result.data.get('contacts')!;
+      
+      expect(entries[0].fields.size).toBe(2); // name and email
+      expect(entries[1].fields.size).toBe(2); // name and phone
+      expect(entries[1].fields.has('email')).toBe(false);
+    });
+  });
+
+  describe('Data validation', () => {
+    it('should validate data types', () => {
+      const markdown = `
+!? datadef test
+!fname: age, type: number, required: true
+!fname: email, type: text, format: "email"
+!#
+
+!? data test
+| !age | !email |
+|------|--------|
+| not-a-number | invalid-email |
+| 25 | valid@example.com |
+!#
+`;
+
+      const result = parser.parse(markdown, { validateData: true });
+
+      expect(result.errors.length).toBeGreaterThan(0);
+      
+      const typeErrors = result.errors.filter(e => e.type === ErrorType.TYPE_MISMATCH);
+      const validationErrors = result.errors.filter(e => e.type === ErrorType.VALIDATION_FAILED);
+      
+      expect(typeErrors.length).toBeGreaterThan(0);
+      expect(validationErrors.length).toBeGreaterThan(0);
+    });
+
+    it('should validate required fields', () => {
+      const markdown = `
+!? datadef test
+!fname: name, type: text, required: true
+!fname: email, type: text
+!#
+
+!? data test
+| !email |
+|--------|
+| test@example.com |
+!#
+`;
+
+      const result = parser.parse(markdown, { validateData: true });
+
+      const requiredErrors = result.errors.filter(e => e.type === ErrorType.MISSING_REQUIRED_FIELD);
+      expect(requiredErrors.length).toBeGreaterThan(0);
+    });
+
+    it('should validate field existence', () => {
+      const markdown = `
+!? datadef test
+!fname: name, type: text
+!#
+
+!? data test
+| !name | !unknown |
+|-------|----------|
+| John  | value    |
+!#
+`;
+
+      const result = parser.parse(markdown, { validateData: true });
+
+      const fieldErrors = result.errors.filter(e => e.type === ErrorType.INVALID_FIELD_NAME);
+      expect(fieldErrors.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Error handling', () => {
+    it('should handle schema not found', () => {
+      const markdown = `
+!? data nonexistent
+| !name |
+|-------|
+| John  |
+!#
+`;
+
+      const result = parser.parse(markdown);
+
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].type).toBe(ErrorType.SCHEMA_NOT_FOUND);
+    });
+
+    it('should handle unclosed blocks', () => {
+      const markdown = `
+!? datadef test
+!fname: name, type: text
+// Missing !# here
+`;
+
+      const result = parser.parse(markdown);
+
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].type).toBe(ErrorType.BLOCK_NOT_CLOSED);
+    });
+
+    it('should provide line numbers in errors', () => {
+      const markdown = `Line 1
+Line 2
+!? datadef test
+!fname: 123invalid
+!#`;
+
+      const result = parser.parse(markdown);
+
+      expect(result.errors.length).toBeGreaterThan(0);
+      expect(result.errors[0].lineNumber).toBe(4);
+    });
+  });
+
+  describe('Comments and mixed content', () => {
+    it('should handle comments within blocks', () => {
+      const markdown = `
+!? datadef test
+<!-- This is a comment -->
+!fname: name, type: text
+<!-- Another comment -->
+!fname: age, type: number
+!#
+`;
+
+      const result = parser.parse(markdown);
+
+      expect(result.errors).toHaveLength(0);
+      expect(result.schemas.get('test')!.fields).toHaveLength(2);
+    });
+
+    it('should parse data blocks mixed with regular markdown', () => {
+      const markdown = `
+# My Document
+
+This is regular markdown content.
+
+!? datadef contacts
+!fname: name, type: text
+!#
+
+## Some section
+
+More markdown content here.
+
+!? data contacts
+| !name |
+|-------|
+| John  |
+!#
+
+And even more content.
+`;
+
+      const result = parser.parse(markdown);
+
+      expect(result.errors).toHaveLength(0);
+      expect(result.schemas.size).toBe(1);
+      expect(result.data.size).toBe(1);
+    });
+  });
+
+  describe('Performance and metadata', () => {
+    it('should provide parsing metadata', () => {
+      const markdown = `
+!? datadef test
+!fname: name, type: text
+!#
+
+!? data test
+| !name |
+|-------|
+| John  |
+| Jane  |
+!#
+`;
+
+      const result = parser.parse(markdown);
+
+      expect(result.metadata).toBeDefined();
+      expect(result.metadata.parseTime).toBeGreaterThan(0);
+      expect(result.metadata.totalLines).toBe(markdown.split('\n').length);
+      expect(result.metadata.schemasFound).toBe(1);
+      expect(result.metadata.dataEntriesFound).toBe(2);
+    });
+  });
+
+  describe('Complex scenarios', () => {
+    it('should handle complex real-world example', () => {
+      const markdown = `
+# Employee Database
+
+This document contains employee information.
+
+!? datadef employees
+!fname: id, type: number, label: "Employee ID", required: true
+!fname: name, type: text, label: "Full Name", required: true
+!fname: email, type: text, format: "email", required: true
+!fname: department, type: text, valid: {options: ["Engineering", "Sales", "HR", "Marketing"]}
+!fname: salary, type: number, format: "$n,n.##", valid: {min: 30000, max: 200000}
+!fname: start_date, type: date, format: "DD/MM/YYYY"
+!fname: active, type: boolean, format: "y/n"
+!index: "id"
+!index: "email"
+!index: "department+active"
+!#
+
+## Employee Data
+
+!? data employees
+| !id | !name | !email | !department | !salary | !start_date | !active |
+|-----|-------|--------|-------------|---------|-------------|---------|
+| 1 | John Smith | john.smith@company.com | Engineering | 85000 | 15/03/2020 | true |
+| 2 | Jane Doe | jane.doe@company.com | Sales | 75000 | 22/07/2021 | true |
+| 3 | Bob Johnson | bob.johnson@company.com | HR | 65000 | 10/11/2019 | false |
+!#
+
+## Additional Information
+
+More markdown content here.
+`;
+
+      const result = parser.parse(markdown, { validateData: true });
+
+      expect(result.errors).toHaveLength(0);
+      expect(result.schemas.size).toBe(1);
+      expect(result.data.size).toBe(1);
+
+      const schema = result.schemas.get('employees')!;
+      expect(schema.fields).toHaveLength(7);
+      expect(schema.indexes).toHaveLength(3);
+
+      const entries = result.data.get('employees')!;
+      expect(entries).toHaveLength(3);
+
+      // Verify complex field definitions
+      const salaryField = schema.fields.find(f => f.name === 'salary')!;
+      expect(salaryField.format).toBe('$n,n.##');
+      expect(salaryField.validation?.min).toBe(30000);
+
+      const deptField = schema.fields.find(f => f.name === 'department')!;
+      expect(deptField.validation?.options).toEqual(['Engineering', 'Sales', 'HR', 'Marketing']);
+    });
+  });
+});

@@ -1,0 +1,176 @@
+import { Tokenizer } from '../tokenizer';
+import { TokenType } from '../types';
+
+describe('Tokenizer', () => {
+  let tokenizer: Tokenizer;
+
+  describe('Block markers', () => {
+    it('should tokenize data definition block start', () => {
+      tokenizer = new Tokenizer('!? datadef contacts');
+      const tokens = tokenizer.tokenize();
+      
+      expect(tokens).toHaveLength(2); // BLOCK_START + EOF
+      expect(tokens[0].type).toBe(TokenType.BLOCK_START);
+      expect(tokens[0].value).toBe('datadef contacts');
+    });
+
+    it('should tokenize data entry block start', () => {
+      tokenizer = new Tokenizer('!? data contacts');
+      const tokens = tokenizer.tokenize();
+      
+      expect(tokens[0].type).toBe(TokenType.BLOCK_START);
+      expect(tokens[0].value).toBe('data contacts');
+    });
+
+    it('should tokenize block end', () => {
+      tokenizer = new Tokenizer('!#');
+      const tokens = tokenizer.tokenize();
+      
+      expect(tokens[0].type).toBe(TokenType.BLOCK_END);
+      expect(tokens[0].value).toBe('!#');
+    });
+
+    it('should tokenize external schema reference', () => {
+      tokenizer = new Tokenizer('!? data [contacts](./schemas/contacts.md)');
+      const tokens = tokenizer.tokenize();
+      
+      expect(tokens[0].type).toBe(TokenType.BLOCK_START);
+      expect(tokens[0].value).toBe('data [contacts](./schemas/contacts.md)');
+    });
+  });
+
+  describe('Field definitions', () => {
+    it('should tokenize field name definition', () => {
+      tokenizer = new Tokenizer('!fname: name, type: text, label: "Full Name"');
+      const tokens = tokenizer.tokenize();
+      
+      expect(tokens[0].type).toBe(TokenType.FIELD_NAME);
+      expect(tokens[0].value).toBe('name, type: text, label: "Full Name"');
+    });
+
+    it('should tokenize index definition', () => {
+      tokenizer = new Tokenizer('!index: "name+email"');
+      const tokens = tokenizer.tokenize();
+      
+      expect(tokens[0].type).toBe(TokenType.INDEX_DEFINITION);
+      expect(tokens[0].value).toBe('"name+email"');
+    });
+  });
+
+  describe('Data entries', () => {
+    it('should tokenize field values', () => {
+      tokenizer = new Tokenizer('!name John Doe\n!email john@example.com');
+      const tokens = tokenizer.tokenize();
+      
+      expect(tokens[0].type).toBe(TokenType.FIELD_VALUE);
+      expect(tokens[0].value).toBe('name John Doe');
+      expect(tokens[2].type).toBe(TokenType.FIELD_VALUE);
+      expect(tokens[2].value).toBe('email john@example.com');
+    });
+
+    it('should tokenize record separator', () => {
+      tokenizer = new Tokenizer('!-');
+      const tokens = tokenizer.tokenize();
+      
+      expect(tokens[0].type).toBe(TokenType.RECORD_SEPARATOR);
+      expect(tokens[0].value).toBe('!-');
+    });
+
+    it('should tokenize table headers', () => {
+      tokenizer = new Tokenizer('| !name | !email | !age |');
+      const tokens = tokenizer.tokenize();
+      
+      expect(tokens[0].type).toBe(TokenType.TABLE_HEADER);
+      expect(tokens[0].value).toBe('| !name | !email | !age |');
+    });
+
+    it('should tokenize table rows', () => {
+      tokenizer = new Tokenizer('| John | john@example.com | 30 |');
+      const tokens = tokenizer.tokenize();
+      
+      expect(tokens[0].type).toBe(TokenType.TABLE_ROW);
+      expect(tokens[0].value).toBe('| John | john@example.com | 30 |');
+    });
+  });
+
+  describe('Comments', () => {
+    it('should tokenize HTML comments', () => {
+      tokenizer = new Tokenizer('<!-- This is a comment -->');
+      const tokens = tokenizer.tokenize();
+      
+      expect(tokens[0].type).toBe(TokenType.COMMENT);
+      expect(tokens[0].value).toBe(' This is a comment ');
+    });
+  });
+
+  describe('Position tracking', () => {
+    it('should track line and column positions', () => {
+      tokenizer = new Tokenizer('!? datadef test\n!fname: name');
+      const tokens = tokenizer.tokenize();
+      
+      expect(tokens[0].position.line).toBe(1);
+      expect(tokens[0].position.column).toBe(1);
+      expect(tokens[2].position.line).toBe(2);
+      expect(tokens[2].position.column).toBe(1);
+    });
+  });
+
+  describe('Complex scenarios', () => {
+    it('should tokenize complete data definition block', () => {
+      const markdown = `!? datadef contacts
+!fname: name, type: text, label: "Full Name"
+!fname: email, type: text, format: "email"
+!fname: age, type: number, valid: {min: 0, max: 150}
+!index: "name+email"
+!#`;
+
+      tokenizer = new Tokenizer(markdown);
+      const tokens = tokenizer.tokenize();
+      
+      const tokenTypes = tokens.map(t => t.type);
+      expect(tokenTypes).toContain(TokenType.BLOCK_START);
+      expect(tokenTypes).toContain(TokenType.FIELD_NAME);
+      expect(tokenTypes).toContain(TokenType.INDEX_DEFINITION);
+      expect(tokenTypes).toContain(TokenType.BLOCK_END);
+    });
+
+    it('should tokenize complete data entry block with tabular format', () => {
+      const markdown = `!? data contacts
+| !name | !email | !age |
+|-------|--------|------|
+| John  | john@example.com | 30 |
+| Jane  | jane@example.com | 25 |
+!#`;
+
+      tokenizer = new Tokenizer(markdown);
+      const tokens = tokenizer.tokenize();
+      
+      const tokenTypes = tokens.map(t => t.type);
+      expect(tokenTypes).toContain(TokenType.BLOCK_START);
+      expect(tokenTypes).toContain(TokenType.TABLE_HEADER);
+      expect(tokenTypes).toContain(TokenType.TABLE_ROW);
+      expect(tokenTypes).toContain(TokenType.BLOCK_END);
+    });
+
+    it('should tokenize complete data entry block with free-form format', () => {
+      const markdown = `!? data contacts
+!name John Doe
+!email john@example.com
+!age 30
+!-
+!name Jane Smith
+!email jane@example.com
+!age 25
+!#`;
+
+      tokenizer = new Tokenizer(markdown);
+      const tokens = tokenizer.tokenize();
+      
+      const tokenTypes = tokens.map(t => t.type);
+      expect(tokenTypes).toContain(TokenType.BLOCK_START);
+      expect(tokenTypes).toContain(TokenType.FIELD_VALUE);
+      expect(tokenTypes).toContain(TokenType.RECORD_SEPARATOR);
+      expect(tokenTypes).toContain(TokenType.BLOCK_END);
+    });
+  });
+});

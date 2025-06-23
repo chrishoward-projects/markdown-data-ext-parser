@@ -1,0 +1,357 @@
+import { DataTypeValidator, DataTypeConverter } from '../data-types';
+import { DataType, FieldDefinition, ErrorType } from '../types';
+
+describe('DataTypeValidator', () => {
+  let validator: DataTypeValidator;
+
+  beforeEach(() => {
+    validator = new DataTypeValidator();
+  });
+
+  describe('Text validation', () => {
+    it('should validate email format', () => {
+      const field: FieldDefinition = {
+        name: 'email',
+        type: DataType.TEXT,
+        format: 'email'
+      };
+
+      const validEmails = ['test@example.com', 'user.name@domain.co.uk'];
+      const invalidEmails = ['invalid-email', 'test@', '@domain.com'];
+
+      validEmails.forEach(email => {
+        const errors = validator.validateValue(email, field);
+        expect(errors).toHaveLength(0);
+      });
+
+      invalidEmails.forEach(email => {
+        const errors = validator.validateValue(email, field);
+        expect(errors.length).toBeGreaterThan(0);
+        expect(errors[0]?.type).toBe(ErrorType.VALIDATION_FAILED);
+      });
+    });
+
+    it('should validate URL format', () => {
+      const field: FieldDefinition = {
+        name: 'website',
+        type: DataType.TEXT,
+        format: 'url'
+      };
+
+      const validUrls = ['https://example.com', 'http://test.org', 'https://subdomain.example.com/path'];
+      const invalidUrls = ['not-a-url', 'ftp://invalid', 'just text'];
+
+      validUrls.forEach(url => {
+        const errors = validator.validateValue(url, field);
+        expect(errors).toHaveLength(0);
+      });
+
+      invalidUrls.forEach(url => {
+        const errors = validator.validateValue(url, field);
+        expect(errors.length).toBeGreaterThan(0);
+      });
+    });
+
+    it('should validate text patterns', () => {
+      const field: FieldDefinition = {
+        name: 'phone',
+        type: DataType.TEXT,
+        format: '(##) #### ####'
+      };
+
+      const validPhones = ['(01) 2345 6789', '(99) 8888 7777'];
+      const invalidPhones = ['01 2345 6789', '(ab) 2345 6789', '(01) 234 567'];
+
+      validPhones.forEach(phone => {
+        const errors = validator.validateValue(phone, field);
+        expect(errors).toHaveLength(0);
+      });
+
+      invalidPhones.forEach(phone => {
+        const errors = validator.validateValue(phone, field);
+        expect(errors.length).toBeGreaterThan(0);
+      });
+    });
+  });
+
+  describe('Number validation', () => {
+    it('should validate numeric values', () => {
+      const field: FieldDefinition = {
+        name: 'age',
+        type: DataType.NUMBER
+      };
+
+      const validNumbers = ['25', '3.14', '0', '-5', '1000'];
+      const invalidNumbers = ['abc', 'twenty', ''];
+
+      validNumbers.forEach(num => {
+        const errors = validator.validateValue(num, field);
+        expect(errors).toHaveLength(0);
+      });
+
+      invalidNumbers.forEach(num => {
+        const errors = validator.validateValue(num, field);
+        expect(errors.length).toBeGreaterThan(0);
+        expect(errors[0]?.type).toBe(ErrorType.TYPE_MISMATCH);
+      });
+    });
+
+    it('should validate numbers with formatting', () => {
+      const field: FieldDefinition = {
+        name: 'price',
+        type: DataType.NUMBER
+      };
+
+      const formattedNumbers = ['$1,234.56', '1,000', '50%'];
+      
+      formattedNumbers.forEach(num => {
+        const errors = validator.validateValue(num, field);
+        expect(errors).toHaveLength(0);
+      });
+    });
+  });
+
+  describe('Date validation', () => {
+    it('should validate standard date formats', () => {
+      const field: FieldDefinition = {
+        name: 'date',
+        type: DataType.DATE
+      };
+
+      const validDates = ['2023-12-25', '12/25/2023', 'December 25, 2023'];
+      const invalidDates = ['not a date', '32/13/2023', ''];
+
+      validDates.forEach(date => {
+        const errors = validator.validateValue(date, field);
+        expect(errors).toHaveLength(0);
+      });
+
+      invalidDates.forEach(date => {
+        const errors = validator.validateValue(date, field);
+        expect(errors.length).toBeGreaterThan(0);
+      });
+    });
+
+    it('should validate custom date formats', () => {
+      const field: FieldDefinition = {
+        name: 'date',
+        type: DataType.DATE,
+        format: 'DD/MM/YYYY'
+      };
+
+      const validDates = ['25/12/2023', '01/01/2024'];
+
+      validDates.forEach(date => {
+        const errors = validator.validateValue(date, field);
+        expect(errors).toHaveLength(0);
+      });
+    });
+  });
+
+  describe('Time validation', () => {
+    it('should validate time formats', () => {
+      const field: FieldDefinition = {
+        name: 'time',
+        type: DataType.TIME
+      };
+
+      const validTimes = ['14:30', '2:30 PM', '09:15:30', '11:59 am'];
+      const invalidTimes = ['25:00', '14:60', 'not a time'];
+
+      validTimes.forEach(time => {
+        const errors = validator.validateValue(time, field);
+        expect(errors).toHaveLength(0);
+      });
+
+      invalidTimes.forEach(time => {
+        const errors = validator.validateValue(time, field);
+        expect(errors.length).toBeGreaterThan(0);
+      });
+    });
+  });
+
+  describe('Boolean validation', () => {
+    it('should validate boolean values', () => {
+      const field: FieldDefinition = {
+        name: 'active',
+        type: DataType.BOOLEAN
+      };
+
+      const validBooleans = ['true', 'false', 'yes', 'no', 'y', 'n', '1', '0'];
+      const invalidBooleans = ['maybe', 'invalid', '2'];
+
+      validBooleans.forEach(bool => {
+        const errors = validator.validateValue(bool, field);
+        expect(errors).toHaveLength(0);
+      });
+
+      invalidBooleans.forEach(bool => {
+        const errors = validator.validateValue(bool, field);
+        expect(errors.length).toBeGreaterThan(0);
+      });
+    });
+  });
+
+  describe('Validation rules', () => {
+    it('should validate minimum values', () => {
+      const field: FieldDefinition = {
+        name: 'age',
+        type: DataType.NUMBER,
+        validation: { min: 18 }
+      };
+
+      const errors1 = validator.validateValue('25', field);
+      expect(errors1).toHaveLength(0);
+
+      const errors2 = validator.validateValue('15', field);
+      expect(errors2.length).toBeGreaterThan(0);
+    });
+
+    it('should validate maximum values', () => {
+      const field: FieldDefinition = {
+        name: 'age',
+        type: DataType.NUMBER,
+        validation: { max: 65 }
+      };
+
+      const errors1 = validator.validateValue('30', field);
+      expect(errors1).toHaveLength(0);
+
+      const errors2 = validator.validateValue('70', field);
+      expect(errors2.length).toBeGreaterThan(0);
+    });
+
+    it('should validate required fields', () => {
+      const field: FieldDefinition = {
+        name: 'name',
+        type: DataType.TEXT,
+        required: true
+      };
+
+      const errors1 = validator.validateValue('John', field);
+      expect(errors1).toHaveLength(0);
+
+      const errors2 = validator.validateValue(null, field);
+      expect(errors2.length).toBeGreaterThan(0);
+      expect(errors2[0]?.type).toBe(ErrorType.MISSING_REQUIRED_FIELD);
+    });
+
+    it('should validate option constraints', () => {
+      const field: FieldDefinition = {
+        name: 'status',
+        type: DataType.TEXT,
+        validation: { options: ['active', 'inactive', 'pending'] }
+      };
+
+      const errors1 = validator.validateValue('active', field);
+      expect(errors1).toHaveLength(0);
+
+      const errors2 = validator.validateValue('unknown', field);
+      expect(errors2.length).toBeGreaterThan(0);
+    });
+
+    it('should validate pattern constraints', () => {
+      const field: FieldDefinition = {
+        name: 'code',
+        type: DataType.TEXT,
+        validation: { pattern: '^[A-Z]{3}\\d{3}$' }
+      };
+
+      const errors1 = validator.validateValue('ABC123', field);
+      expect(errors1).toHaveLength(0);
+
+      const errors2 = validator.validateValue('invalid', field);
+      expect(errors2.length).toBeGreaterThan(0);
+    });
+  });
+});
+
+describe('DataTypeConverter', () => {
+  let converter: DataTypeConverter;
+
+  beforeEach(() => {
+    converter = new DataTypeConverter();
+  });
+
+  describe('Text conversion', () => {
+    it('should apply text transformations', () => {
+      const titleField: FieldDefinition = {
+        name: 'name',
+        type: DataType.TEXT,
+        format: 'title'
+      };
+
+      const upperField: FieldDefinition = {
+        name: 'code',
+        type: DataType.TEXT,
+        format: 'upper'
+      };
+
+      const lowerField: FieldDefinition = {
+        name: 'email',
+        type: DataType.TEXT,
+        format: 'lower'
+      };
+
+      expect(converter.convertValue('john doe', titleField)).toBe('John Doe');
+      expect(converter.convertValue('abc123', upperField)).toBe('ABC123');
+      expect(converter.convertValue('TEST@EXAMPLE.COM', lowerField)).toBe('test@example.com');
+    });
+  });
+
+  describe('Number conversion', () => {
+    it('should convert formatted numbers', () => {
+      const field: FieldDefinition = {
+        name: 'price',
+        type: DataType.NUMBER
+      };
+
+      expect(converter.convertValue('$1,234.56', field)).toBe(1234.56);
+      expect(converter.convertValue('50%', field)).toBe(50);
+      expect(converter.convertValue('1,000', field)).toBe(1000);
+    });
+  });
+
+  describe('Boolean conversion', () => {
+    it('should convert boolean values', () => {
+      const field: FieldDefinition = {
+        name: 'active',
+        type: DataType.BOOLEAN
+      };
+
+      expect(converter.convertValue('true', field)).toBe(true);
+      expect(converter.convertValue('false', field)).toBe(false);
+      expect(converter.convertValue('yes', field)).toBe(true);
+      expect(converter.convertValue('no', field)).toBe(false);
+      expect(converter.convertValue('y', field)).toBe(true);
+      expect(converter.convertValue('n', field)).toBe(false);
+      expect(converter.convertValue('1', field)).toBe(true);
+      expect(converter.convertValue('0', field)).toBe(false);
+    });
+  });
+
+  describe('Date and Time conversion', () => {
+    it('should convert date strings to Date objects', () => {
+      const field: FieldDefinition = {
+        name: 'date',
+        type: DataType.DATE
+      };
+
+      const result = converter.convertValue('2023-12-25', field);
+      expect(result).toBeInstanceOf(Date);
+      expect((result as Date).getFullYear()).toBe(2023);
+    });
+
+    it('should convert time strings to Date objects', () => {
+      const field: FieldDefinition = {
+        name: 'time',
+        type: DataType.TIME
+      };
+
+      const result = converter.convertValue('14:30', field);
+      expect(result).toBeInstanceOf(Date);
+      expect((result as Date).getHours()).toBe(14);
+      expect((result as Date).getMinutes()).toBe(30);
+    });
+  });
+});

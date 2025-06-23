@@ -1,0 +1,307 @@
+import { SchemaParser, validateSchemaDefinition } from '../schema-parser';
+import { Tokenizer } from '../tokenizer';
+import { DataType, ErrorType } from '../types';
+
+describe('SchemaParser', () => {
+  function parseSchema(markdown: string) {
+    const tokenizer = new Tokenizer(markdown);
+    const tokens = tokenizer.tokenize();
+    // Remove BLOCK_START and BLOCK_END tokens for schema content only
+    const schemaTokens = tokens.slice(1, -2); // Remove first (BLOCK_START), last (EOF), and second-to-last (BLOCK_END)
+    
+    const parser = new SchemaParser(schemaTokens);
+    return parser.parseSchema('test_schema', 1);
+  }
+
+  describe('Field definitions', () => {
+    it('should parse simple field definition', () => {
+      const markdown = `!? datadef test
+!fname: name
+!#`;
+      
+      const result = parseSchema(markdown);
+      
+      expect(result.errors).toHaveLength(0);
+      expect(result.schema).not.toBeNull();
+      expect(result.schema!.fields).toHaveLength(1);
+      expect(result.schema?.fields[0]?.name).toBe('name');
+      expect(result.schema?.fields[0]?.type).toBe(DataType.TEXT);
+    });
+
+    it('should parse field with type', () => {
+      const markdown = `!? datadef test
+!fname: age, type: number
+!#`;
+      
+      const result = parseSchema(markdown);
+      
+      expect(result.schema?.fields[0]?.name).toBe('age');
+      expect(result.schema?.fields[0]?.type).toBe(DataType.NUMBER);
+    });
+
+    it('should parse field with label', () => {
+      const markdown = `!? datadef test
+!fname: name, label: "Full Name"
+!#`;
+      
+      const result = parseSchema(markdown);
+      
+      expect(result.schema?.fields[0]?.label).toBe('Full Name');
+    });
+
+    it('should parse field with format', () => {
+      const markdown = `!? datadef test
+!fname: email, type: text, format: "email"
+!#`;
+      
+      const result = parseSchema(markdown);
+      
+      expect(result.schema!.fields[0].format).toBe('email');
+    });
+
+    it('should parse field with dual format', () => {
+      const markdown = `!? datadef test
+!fname: date, type: date, format: {"DD/MM/YYYY", "MMM DD, YYYY"}
+!#`;
+      
+      const result = parseSchema(markdown);
+      
+      expect(result.schema!.fields[0].format).toEqual({
+        input: 'DD/MM/YYYY',
+        display: 'MMM DD, YYYY'
+      });
+    });
+
+    it('should parse field with validation rules', () => {
+      const markdown = `!? datadef test
+!fname: age, type: number, valid: {min: 0, max: 150, required: true}
+!#`;
+      
+      const result = parseSchema(markdown);
+      
+      expect(result.schema!.fields[0].validation).toEqual({
+        min: 0,
+        max: 150,
+        required: true
+      });
+    });
+
+    it('should parse complex field definition', () => {
+      const markdown = `!? datadef test
+!fname: email, type: text, label: "Email Address", format: "email", valid: {required: true, pattern: "email"}
+!#`;
+      
+      const result = parseSchema(markdown);
+      
+      const field = result.schema!.fields[0];
+      expect(field.name).toBe('email');
+      expect(field.type).toBe(DataType.TEXT);
+      expect(field.label).toBe('Email Address');
+      expect(field.format).toBe('email');
+      expect(field.validation).toEqual({
+        required: true,
+        pattern: 'email'
+      });
+    });
+  });
+
+  describe('Index definitions', () => {
+    it('should parse single field index', () => {
+      const markdown = `!? datadef test
+!fname: name
+!index: "name"
+!#`;
+      
+      const result = parseSchema(markdown);
+      
+      expect(result.schema!.indexes).toHaveLength(1);
+      expect(result.schema!.indexes[0].fields).toEqual(['name']);
+      expect(result.schema!.indexes[0].name).toBe('name');
+    });
+
+    it('should parse composite index', () => {
+      const markdown = `!? datadef test
+!fname: name
+!fname: email
+!index: "name+email"
+!#`;
+      
+      const result = parseSchema(markdown);
+      
+      expect(result.schema!.indexes[0].fields).toEqual(['name', 'email']);
+      expect(result.schema!.indexes[0].name).toBe('name+email');
+    });
+
+    it('should validate index references existing fields', () => {
+      const markdown = `!? datadef test
+!fname: name
+!index: "name+nonexistent"
+!#`;
+      
+      const result = parseSchema(markdown);
+      
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].type).toBe(ErrorType.INVALID_FIELD_NAME);
+    });
+  });
+
+  describe('Error handling', () => {
+    it('should detect duplicate field names', () => {
+      const markdown = `!? datadef test
+!fname: name
+!fname: name
+!#`;
+      
+      const result = parseSchema(markdown);
+      
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].type).toBe(ErrorType.DUPLICATE_FIELD);
+    });
+
+    it('should detect invalid field names', () => {
+      const markdown = `!? datadef test
+!fname: 123invalid
+!#`;
+      
+      const result = parseSchema(markdown);
+      
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].type).toBe(ErrorType.INVALID_FIELD_NAME);
+    });
+
+    it('should handle missing field name', () => {
+      const markdown = `!? datadef test
+!fname: 
+!#`;
+      
+      const result = parseSchema(markdown);
+      
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].type).toBe(ErrorType.INVALID_FIELD_NAME);
+    });
+  });
+
+  describe('Data types', () => {
+    const dataTypes = [
+      { input: 'text', expected: DataType.TEXT },
+      { input: 'number', expected: DataType.NUMBER },
+      { input: 'num', expected: DataType.NUMBER },
+      { input: 'date', expected: DataType.DATE },
+      { input: 'time', expected: DataType.TIME },
+      { input: 'boolean', expected: DataType.BOOLEAN },
+      { input: 'bool', expected: DataType.BOOLEAN },
+      { input: 'invalid', expected: DataType.TEXT } // Should default to text
+    ];
+
+    dataTypes.forEach(({ input, expected }) => {
+      it(`should parse data type: ${input}`, () => {
+        const markdown = `!? datadef test
+!fname: field, type: ${input}
+!#`;
+        
+        const result = parseSchema(markdown);
+        
+        expect(result.schema!.fields[0].type).toBe(expected);
+      });
+    });
+  });
+
+  describe('Comments and whitespace', () => {
+    it('should handle comments in schema definition', () => {
+      const markdown = `!? datadef test
+<!-- This is a comment -->
+!fname: name, type: text
+<!-- Another comment -->
+!fname: age, type: number
+!#`;
+      
+      const result = parseSchema(markdown);
+      
+      expect(result.errors).toHaveLength(0);
+      expect(result.schema!.fields).toHaveLength(2);
+    });
+
+    it('should handle extra whitespace', () => {
+      const markdown = `!? datadef test
+
+!fname: name , type: text , label: "Full Name" 
+
+!fname: age , type: number 
+
+!#`;
+      
+      const result = parseSchema(markdown);
+      
+      expect(result.errors).toHaveLength(0);
+      expect(result.schema!.fields).toHaveLength(2);
+    });
+  });
+});
+
+describe('validateSchemaDefinition', () => {
+  it('should validate empty schema', () => {
+    const schema = {
+      name: 'test',
+      fields: [],
+      indexes: [],
+      lineNumber: 1
+    };
+    
+    const errors = validateSchemaDefinition(schema);
+    
+    expect(errors).toHaveLength(1);
+    expect(errors[0].type).toBe(ErrorType.SYNTAX_ERROR);
+  });
+
+  it('should validate field names', () => {
+    const schema = {
+      name: 'test',
+      fields: [
+        { name: '123invalid', type: DataType.TEXT }
+      ],
+      indexes: [],
+      lineNumber: 1
+    };
+    
+    const errors = validateSchemaDefinition(schema);
+    
+    expect(errors).toHaveLength(1);
+    expect(errors[0].type).toBe(ErrorType.INVALID_FIELD_NAME);
+  });
+
+  it('should validate index field references', () => {
+    const schema = {
+      name: 'test',
+      fields: [
+        { name: 'name', type: DataType.TEXT }
+      ],
+      indexes: [
+        { name: 'name+email', fields: ['name', 'email'] }
+      ],
+      lineNumber: 1
+    };
+    
+    const errors = validateSchemaDefinition(schema);
+    
+    expect(errors).toHaveLength(1);
+    expect(errors[0].type).toBe(ErrorType.INVALID_FIELD_NAME);
+  });
+
+  it('should pass validation for valid schema', () => {
+    const schema = {
+      name: 'test',
+      fields: [
+        { name: 'name', type: DataType.TEXT },
+        { name: 'email', type: DataType.TEXT }
+      ],
+      indexes: [
+        { name: 'name+email', fields: ['name', 'email'] }
+      ],
+      lineNumber: 1
+    };
+    
+    const errors = validateSchemaDefinition(schema);
+    
+    expect(errors).toHaveLength(0);
+  });
+});
