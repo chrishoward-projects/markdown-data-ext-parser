@@ -367,20 +367,20 @@ Our current team members:
                 const parseTime = Math.round(endTime - startTime);
 
                 displayResults(result, parseTime);
-                updateStatus(\`Parsed successfully in \${parseTime}ms\`, 'success');
+                updateStatus(`Parsed successfully in ${parseTime}ms`, 'success');
             } catch (error) {
                 console.error('Parse error:', error);
-                updateStatus(\`Parse failed: \${error.message}\`, 'error');
+                updateStatus(`Parse failed: ${error.message}`, 'error');
                 
-                document.getElementById('output').innerHTML = \`
+                document.getElementById('output').innerHTML = `
                     <div class="errors">
                         <h3>Parse Error</h3>
                         <div class="error-item">
-                            <strong>Error:</strong> \${error.message}<br>
-                            <strong>Stack:</strong> <pre>\${error.stack}</pre>
+                            <strong>Error:</strong> ${error.message}<br>
+                            <strong>Stack:</strong> <pre>${error.stack}</pre>
                         </div>
                     </div>
-                \`;
+                `;
             }
         };
 
@@ -408,22 +408,22 @@ Our current team members:
                     output += '<div style="background: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 4px; color: #155724;"><strong>✓ Validation Passed</strong><br>No errors or warnings found.</div>';
                 } else {
                     if (hasErrors) {
-                        output += '<div class="errors"><h3>❌ Validation Errors (\${result.errors.length})</h3>';
+                        output += `<div class="errors"><h3>❌ Validation Errors (${result.errors.length})</h3>`;
                         result.errors.forEach(error => {
-                            output += \`<div class="error-item">
-                                <strong>Line \${error.lineNumber || 'unknown'}:</strong> \${error.message}<br>
-                                <small>Type: \${error.type}\${error.fieldName ? ', Field: ' + error.fieldName : ''}\${error.schemaName ? ', Schema: ' + error.schemaName : ''}</small>
-                            </div>\`;
+                            output += `<div class="error-item">
+                                <strong>Line ${error.lineNumber || 'unknown'}:</strong> ${error.message}<br>
+                                <small>Type: ${error.type}${error.fieldName ? ', Field: ' + error.fieldName : ''}${error.schemaName ? ', Schema: ' + error.schemaName : ''}</small>
+                            </div>`;
                         });
                         output += '</div>';
                     }
                     
                     if (hasWarnings) {
-                        output += '<div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 4px; margin-bottom: 15px;"><h3>⚠️ Warnings (\${result.warnings.length})</h3>';
+                        output += `<div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 4px; margin-bottom: 15px;"><h3>⚠️ Warnings (${result.warnings.length})</h3>`;
                         result.warnings.forEach(warning => {
-                            output += \`<div style="margin-bottom: 8px;">
-                                <strong>Line \${warning.lineNumber || 'unknown'}:</strong> \${warning.message}
-                            </div>\`;
+                            output += `<div style="margin-bottom: 8px;">
+                                <strong>Line ${warning.lineNumber || 'unknown'}:</strong> ${warning.message}
+                            </div>`;
                         });
                         output += '</div>';
                     }
@@ -432,10 +432,10 @@ Our current team members:
                 output += '</div>';
                 
                 document.getElementById('output').innerHTML = output;
-                updateStatus(\`Validation complete: \${result.errors.length} errors, \${result.warnings.length} warnings\`, hasErrors ? 'error' : 'success');
+                updateStatus(`Validation complete: ${result.errors.length} errors, ${result.warnings.length} warnings`, hasErrors ? 'error' : 'success');
             } catch (error) {
                 console.error('Validation error:', error);
-                updateStatus(\`Validation failed: \${error.message}\`, 'error');
+                updateStatus(`Validation failed: ${error.message}`, 'error');
             }
         };
 
@@ -458,33 +458,33 @@ Our current team members:
             let output = '';
 
             // Metadata
-            output += \`
+            output += `
                 <div class="metadata">
                     <h3>📊 Parse Metadata</h3>
                     <div class="metadata-grid">
-                        <div class="metadata-item"><span class="metadata-label">Parse Time:</span> \${parseTime}ms</div>
-                        <div class="metadata-item"><span class="metadata-label">Total Lines:</span> \${result.metadata.totalLines}</div>
-                        <div class="metadata-item"><span class="metadata-label">Schemas Found:</span> \${result.metadata.schemasFound}</div>
-                        <div class="metadata-item"><span class="metadata-label">Data Entries:</span> \${result.metadata.dataEntriesFound}</div>
-                        <div class="metadata-item"><span class="metadata-label">Errors:</span> \${result.errors.length}</div>
-                        <div class="metadata-item"><span class="metadata-label">Warnings:</span> \${result.warnings.length}</div>
+                        <div class="metadata-item"><span class="metadata-label">Parse Time:</span> ${parseTime}ms</div>
+                        <div class="metadata-item"><span class="metadata-label">Total Lines:</span> ${result.metadata.totalLines}</div>
+                        <div class="metadata-item"><span class="metadata-label">Schemas Found:</span> ${result.metadata.schemasFound}</div>
+                        <div class="metadata-item"><span class="metadata-label">Data Entries:</span> ${result.metadata.dataEntriesFound}</div>
+                        <div class="metadata-item"><span class="metadata-label">Errors:</span> ${result.errors.length}</div>
+                        <div class="metadata-item"><span class="metadata-label">Warnings:</span> ${result.warnings.length}</div>
                     </div>
                 </div>
-            \`;
+            `;
 
             // Errors
             if (result.errors.length > 0) {
-                output += \`
+                output += `
                     <div class="errors">
-                        <h3>❌ Errors (\${result.errors.length})</h3>
-                \`;
+                        <h3>❌ Errors (${result.errors.length})</h3>
+                `;
                 result.errors.forEach(error => {
-                    output += \`
+                    output += `
                         <div class="error-item">
-                            <strong>Line \${error.lineNumber || 'unknown'}:</strong> \${error.message}<br>
-                            <small>Type: \${error.type}\${error.fieldName ? ', Field: ' + error.fieldName : ''}\${error.schemaName ? ', Schema: ' + error.schemaName : ''}</small>
+                            <strong>Line ${error.lineNumber || 'unknown'}:</strong> ${error.message}<br>
+                            <small>Type: ${error.type}${error.fieldName ? ', Field: ' + error.fieldName : ''}${error.schemaName ? ', Schema: ' + error.schemaName : ''}</small>
                         </div>
-                    \`;
+                    `;
                 });
                 output += '</div>';
             }
@@ -511,11 +511,11 @@ Our current team members:
             };
 
             // JSON Output
-            output += \`
+            output += `
                 <div class="json-output">
-                    <pre>\${JSON.stringify(cleanResult, null, 2)}</pre>
+                    <pre>${JSON.stringify(cleanResult, null, 2)}</pre>
                 </div>
-            \`;
+            `;
 
             document.getElementById('output').innerHTML = output;
         }
