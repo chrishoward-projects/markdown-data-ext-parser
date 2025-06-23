@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- HTML test interface for interactive parser testing
+  - Two-panel layout with markdown input and JSON output
+  - Real-time parsing with live feedback and auto-parsing
+  - Default example loader with comprehensive employee database demo
+  - Parse and validate-only modes for different testing scenarios
+  - Copy to clipboard functionality for parsed JSON output
+  - Comprehensive error reporting with line numbers and context
+  - Parse metadata display (timing, counts, validation status)
+  - Responsive design that works on mobile devices
+  - Debounced input for performance optimization
+
+### Fixed
+- JavaScript template literal syntax errors in test interface
+- Unterminated template literal issues causing parse failures
+- Inconsistent string interpolation causing display problems
+
 ## [0.1.0] - 2024-06-23
 
 ### Added
