@@ -49,25 +49,47 @@ export class DataTypeValidator {
   private validateTextValue(value: string, field: FieldDefinition): ParseError[] {
     const errors: ParseError[] = [];
     
-    if (field.format && typeof field.format === 'string') {
-      const format = field.format.toLowerCase();
-      
-      switch (format) {
-        case 'email':
-          if (!this.isValidEmail(value)) {
-            errors.push(this.createValidationError(field.name, 'Invalid email format'));
-          }
-          break;
-        case 'url':
-          if (!this.isValidURL(value)) {
-            errors.push(this.createValidationError(field.name, 'Invalid URL format'));
-          }
-          break;
-        default:
-          // Pattern validation for formats like (##) #### ####
-          if (!this.validateTextPattern(value, field.format)) {
-            errors.push(this.createValidationError(field.name, `Value does not match pattern: ${field.format}`));
-          }
+    if (field.format) {
+      // Handle dual format - only validate against input format (first element)
+      if (typeof field.format === 'object' && Array.isArray(field.format) && field.format.length >= 1) {
+        const inputFormat = field.format[0].toLowerCase();
+        
+        switch (inputFormat) {
+          case 'email':
+            if (!this.isValidEmail(value)) {
+              errors.push(this.createValidationError(field.name, 'Invalid email format'));
+            }
+            break;
+          case 'url':
+            if (!this.isValidURL(value)) {
+              errors.push(this.createValidationError(field.name, 'Invalid URL format'));
+            }
+            break;
+          default:
+            // Pattern validation for input format
+            if (!this.validateTextPattern(value, field.format[0])) {
+              errors.push(this.createValidationError(field.name, `Value does not match input pattern: ${field.format[0]}`));
+            }
+        }
+      }
+      // Handle single format - only validate special formats (email, url), not display patterns
+      else if (typeof field.format === 'string') {
+        const format = field.format.toLowerCase();
+        
+        switch (format) {
+          case 'email':
+            if (!this.isValidEmail(value)) {
+              errors.push(this.createValidationError(field.name, 'Invalid email format'));
+            }
+            break;
+          case 'url':
+            if (!this.isValidURL(value)) {
+              errors.push(this.createValidationError(field.name, 'Invalid URL format'));
+            }
+            break;
+          // Do not validate against display patterns like "(##) #### ####"
+          // These are for formatting output, not validating input
+        }
       }
     }
     

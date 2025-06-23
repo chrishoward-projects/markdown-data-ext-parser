@@ -173,8 +173,11 @@ The parser supports five core data types with comprehensive validation:
 !fname: email, type: text, format: "email"     // Email validation
 !fname: website, type: text, format: "url"     // URL validation
 
-// With pattern validation
-!fname: phone, type: text, format: "(##) #### ####"
+// With dual format (input validation + display formatting)
+!fname: phone, type: text, format: {"##########", "(##) #### ####"}
+
+// Display-only formatting (no input validation)
+!fname: display_phone, type: text, format: "(##) #### ####"
 ```
 
 #### Number Type
