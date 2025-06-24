@@ -12,8 +12,27 @@ import socketserver
 import webbrowser
 from pathlib import Path
 
+def find_free_port(start_port=8000, max_attempts=10):
+    """Find the next available port starting from start_port"""
+    for port in range(start_port, start_port + max_attempts):
+        try:
+            with socketserver.TCPServer(("", port), None):
+                return port
+        except OSError:
+            continue
+    return None
+
 def main():
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
+    requested_port = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
+    
+    # Find an available port
+    port = find_free_port(requested_port)
+    if port is None:
+        print(f"Error: Could not find an available port starting from {requested_port}")
+        sys.exit(1)
+    
+    if port != requested_port:
+        print(f"Port {requested_port} is in use, using port {port} instead")
     
     # Change to the script's directory
     script_dir = Path(__file__).parent
