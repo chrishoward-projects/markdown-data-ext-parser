@@ -131,18 +131,30 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
 
   validateData(data: DataEntry[], schema: DataSchema): ValidationResult {
     const errors: import('./types.js').ParseError[] = [];
+    const warnings: import('./types.js').ParseError[] = [];
     
     // Only basic structural validation (parser-level errors)
     errors.push(...validateDataEntries(data, schema));
     
-    // Convert data types without validation
+    // Convert data types and validate types (generate warnings for type mismatches)
     for (const entry of data) {
       const schemaFields = new Map(schema.fields.map(f => [f.name, f]));
       
       for (const [fieldName, value] of entry.fields) {
         const field = schemaFields.get(fieldName);
         if (field) {
-          // Convert the value but don't validate it
+          // Validate type before conversion - add warning if type doesn't match
+          if (!this.dataTypeConverter.validateType(value, field)) {
+            warnings.push({
+              type: 'TYPE_MISMATCH' as any,
+              message: `Field '${fieldName}' expects ${field.type} but got '${value}'`,
+              lineNumber: entry.lineNumber || 0,
+              schemaName: schema.name,
+              fieldName: fieldName
+            });
+          }
+          
+          // Convert the value (even if validation failed, for best-effort parsing)
           const convertedValue = this.dataTypeConverter.convertValue(value, field);
           // Update the entry with converted value
           entry.fields.set(fieldName, convertedValue);
@@ -153,7 +165,7 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
     return {
       valid: errors.length === 0,
       errors,
-      warnings: []
+      warnings
     };
   }
 
