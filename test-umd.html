@@ -275,7 +275,7 @@ Example:
 !? datadef contacts
 !fname: name, type: text, required: true
 !fname: email, type: text, format: 'email'
-!fname: phone, type: text, format: {"##########", "(##) #### ####"}
+!fname: phone, type: text, format: {'##########', '(##) #### ####'}
 !#
 
 !? data contacts
@@ -538,23 +538,9 @@ This database is updated monthly and includes all active employees. Salary infor
             status.className = 'status ' + type;
         }
 
-        // Auto-parse on input changes (with debouncing)
-        let parseTimeout;
-        document.getElementById('markdownInput').addEventListener('input', function() {
-            clearTimeout(parseTimeout);
-            parseTimeout = setTimeout(() => {
-                if (this.value.trim()) {
-                    parseMarkdown();
-                }
-            }, 1000);
-        });
+        // Auto-parsing removed - only parse when button is clicked
 
-        // Load default example on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(() => {
-                loadDefaultExample();
-            }, 100);
-        });
+        // Auto-load example removed - user can click "Load Example" button
     </script>
 </body>
 </html>

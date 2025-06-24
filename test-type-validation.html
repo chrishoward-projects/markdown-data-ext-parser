@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Type Validation Test</title>
+    <style>
+        body { font-family: monospace; margin: 20px; }
+        .warning { color: orange; background: #fff3cd; padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .error { color: red; background: #f8d7da; padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .success { color: green; background: #d4edda; padding: 10px; margin: 10px 0; border-radius: 4px; }
+        pre { background: #f8f9fa; padding: 15px; border-radius: 4px; overflow: auto; }
+    </style>
+</head>
+<body>
+    <h1>Type Validation Test</h1>
+    <div id="output">Loading...</div>
+
+    <script src="./dist/index.umd.js"></script>
+    <script>
+        const parser = new MarkdownDataExtensionParser.MarkdownDataExtensionParser();
+        
+        // Test data with type mismatches to generate warnings
+        const testMarkdown = `!? datadef test_validation
+!fname: id, type: number, required: true, label: "ID"
+!fname: name, type: text, required: true, label: "Name"
+!fname: email, type: text, format: "email", label: "Email"
+!fname: active, type: boolean, required: true, label: "Active"
+!fname: start_date, type: date, label: "Start Date"
+!fname: score, type: number, label: "Score"
+!#
+
+!? data test_validation
+| !id | !name | !email | !active | !start_date | !score |
+|-----|-------|--------|---------|-------------|--------|
+| 1001 | Alice Johnson | alice@company.com | yes | 15/01/2020 | 95.5 |
+| not_a_number | Bob Smith | invalid-email | maybe | not-a-date | not_a_number |
+| 1003 | Carol Davis | carol@company.com | true | 10/06/2022 | 88 |
+!#`;
+
+        console.log('Testing type validation...');
+        const result = parser.parse(testMarkdown, { validateData: true });
+        
+        console.log('Parse result:', result);
+        
+        let output = '<h2>Type Validation Results</h2>';
+        
+        // Show metadata
+        output += `<div class="success">
+            <strong>Parse Success:</strong><br>
+            Found ${result.metadata.dataEntriesFound} entries, ${result.metadata.schemasFound} schemas<br>
+            Errors: ${result.errors.length}, Warnings: ${result.warnings.length}
+        </div>`;
+        
+        // Show errors if any
+        if (result.errors.length > 0) {
+            output += '<h3>Errors:</h3>';
+            result.errors.forEach(error => {
+                output += `<div class="error">
+                    <strong>Line ${error.lineNumber}:</strong> ${error.message}<br>
+                    <small>Type: ${error.type}, Field: ${error.fieldName || 'N/A'}</small>
+                </div>`;
+            });
+        }
+        
+        // Show warnings (type validation warnings)
+        if (result.warnings.length > 0) {
+            output += '<h3>Type Validation Warnings:</h3>';
+            result.warnings.forEach(warning => {
+                output += `<div class="warning">
+                    <strong>Line ${warning.lineNumber}:</strong> ${warning.message}<br>
+                    <small>Type: ${warning.type}, Field: ${warning.fieldName || 'N/A'}</small>
+                </div>`;
+            });
+        } else {
+            output += '<div class="success">No type validation warnings found!</div>';
+        }
+        
+        // Show parsed data
+        output += '<h3>Parsed Data:</h3>';
+        const cleanResult = {
+            data: Array.from(result.data.entries()).map(([schemaName, entries]) => ({
+                schemaName,
+                entries: entries.map(entry => Object.fromEntries(entry.fields))
+            }))
+        };
+        
+        output += `<pre>${JSON.stringify(cleanResult, null, 2)}</pre>`;
+        
+        document.getElementById('output').innerHTML = output;
+    </script>
+</body>
+</html>
