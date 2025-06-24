@@ -1,17 +1,20 @@
-import { Token, TokenType, TokenPosition } from './types.js';
+import { Token, TokenType, TokenPosition, ParseError, ErrorType } from './types.js';
+import { isValidSchemaName, formatErrorMessage } from './utils.js';
 
 export class Tokenizer {
   private text: string;
   private position: number = 0;
   private line: number = 1;
   private column: number = 1;
+  private errors: ParseError[] = [];
 
   constructor(text: string) {
     this.text = text;
   }
 
-  tokenize(): Token[] {
+  tokenize(): { tokens: Token[]; errors: ParseError[] } {
     const tokens: Token[] = [];
+    this.errors = [];
     
     while (!this.isAtEnd()) {
       const token = this.nextToken();
@@ -21,7 +24,7 @@ export class Tokenizer {
     }
     
     tokens.push(this.createToken(TokenType.EOF, ''));
-    return tokens;
+    return { tokens, errors: this.errors };
   }
 
   private nextToken(): Token | null {
@@ -82,8 +85,32 @@ export class Tokenizer {
     this.skipWhitespace();
     
     const blockType = this.readWord();
+    if (!blockType) {
+      this.addError(ErrorType.INVALID_BLOCK_SYNTAX, startPosition.line, {
+        message: 'Missing block type after !? - expected "datadef" or "data"'
+      });
+      return this.createTokenAt(TokenType.BLOCK_START, '!?', startPosition);
+    }
+    
+    if (blockType !== 'datadef' && blockType !== 'data') {
+      this.addError(ErrorType.INVALID_BLOCK_TYPE, startPosition.line, {
+        message: `Invalid block type "${blockType}" - expected "datadef" or "data"`
+      });
+    }
+    
     this.skipWhitespace();
     const schemaName = this.readRestOfLine().trim();
+    
+    if (!schemaName) {
+      this.addError(ErrorType.INVALID_BLOCK_SYNTAX, startPosition.line, {
+        message: 'Missing schema name in block declaration'
+      });
+    } else if (!isValidSchemaName(schemaName)) {
+      this.addError(ErrorType.INVALID_SCHEMA_NAME, startPosition.line, {
+        schemaName,
+        message: `Invalid schema name "${schemaName}" - must start with letter and contain only letters, numbers, underscores`
+      });
+    }
     
     const value = `${blockType} ${schemaName}`.trim();
     return this.createTokenAt(TokenType.BLOCK_START, value, startPosition);
@@ -182,13 +209,29 @@ export class Tokenizer {
   private readExternalReference(startPosition: TokenPosition, schemaName: string): Token {
     this.advance(); // (
     
+    if (!isValidSchemaName(schemaName)) {
+      this.addError(ErrorType.MALFORMED_EXTERNAL_REFERENCE, startPosition.line, {
+        message: `Invalid schema name "${schemaName}" in external reference`
+      });
+    }
+    
     let path = '';
     while (!this.isAtEnd() && this.peek() !== ')') {
       path += this.advance();
     }
     
-    if (this.peek() === ')') {
+    if (this.peek() !== ')') {
+      this.addError(ErrorType.UNCLOSED_LITERAL, startPosition.line, {
+        message: 'Unclosed external reference - missing closing parenthesis'
+      });
+    } else {
       this.advance();
+    }
+    
+    if (!path.trim()) {
+      this.addError(ErrorType.MALFORMED_EXTERNAL_REFERENCE, startPosition.line, {
+        message: 'Empty path in external reference'
+      });
     }
     
     const value = `${schemaName}|${path}`;
@@ -294,5 +337,19 @@ export class Tokenizer {
       value,
       position
     };
+  }
+
+  private addError(
+    type: ErrorType, 
+    lineNumber: number, 
+    details: { message?: string; fieldName?: string; schemaName?: string }
+  ): void {
+    this.errors.push({
+      type,
+      message: formatErrorMessage(type, details),
+      lineNumber,
+      fieldName: details.fieldName,
+      schemaName: details.schemaName
+    });
   }
 }

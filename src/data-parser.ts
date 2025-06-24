@@ -49,22 +49,43 @@ export class DataParser {
 
   private detectDataFormat(): 'tabular' | 'freeform' | 'unknown' {
     let tokenIndex = 0;
+    let foundTabular = false;
+    let foundFreeform = false;
+    let tabularLine = 0;
+    let freeformLine = 0;
     
-    // Skip initial whitespace and comments
+    // Scan all tokens to detect mixed formats
     while (tokenIndex < this.tokens.length) {
       const token = this.tokens[tokenIndex];
+      if (!token) break;
+      
       if (token.type === TokenType.TABLE_HEADER || token.type === TokenType.TABLE_ROW) {
-        return 'tabular';
+        foundTabular = true;
+        if (!tabularLine) tabularLine = token.position.line;
       }
+      
       if (token.type === TokenType.FIELD_VALUE || token.type === TokenType.RECORD_SEPARATOR) {
-        return 'freeform';
+        foundFreeform = true;
+        if (!freeformLine) freeformLine = token.position.line;
       }
+      
       if (token.type === TokenType.BLOCK_END || token.type === TokenType.EOF) {
         break;
       }
+      
       tokenIndex++;
     }
     
+    // Check for mixed formats
+    if (foundTabular && foundFreeform) {
+      this.addError(ErrorType.MIXED_DATA_FORMAT, Math.min(tabularLine, freeformLine), {
+        message: `Mixed data formats detected: tabular format at line ${tabularLine}, free-form format at line ${freeformLine}`
+      });
+      return 'unknown';
+    }
+    
+    if (foundTabular) return 'tabular';
+    if (foundFreeform) return 'freeform';
     return 'unknown';
   }
 
@@ -127,14 +148,35 @@ export class DataParser {
   private parseTableHeader(headerLine: string): { headers: string[] } {
     const headers: string[] = [];
     
+    // Validate basic table syntax
+    if (!headerLine.startsWith('|') || !headerLine.endsWith('|')) {
+      this.addError(ErrorType.INVALID_TABLE_SYNTAX, this.getCurrentLine(), {
+        message: 'Table header must start and end with pipe (|) character'
+      });
+    }
+    
     // Parse markdown table header: | !field1 | !field2 | field3 |
     const cells = headerLine.split('|').map(cell => cell.trim()).filter(cell => cell.length > 0);
     
+    if (cells.length === 0) {
+      this.addError(ErrorType.INVALID_TABLE_SYNTAX, this.getCurrentLine(), {
+        message: 'Table header contains no field definitions'
+      });
+      return { headers };
+    }
+    
     for (const cell of cells) {
       if (cell.startsWith('!')) {
-        headers.push(cell.substring(1));
+        const fieldName = cell.substring(1);
+        if (!fieldName) {
+          this.addError(ErrorType.INVALID_TABLE_SYNTAX, this.getCurrentLine(), {
+            message: 'Empty field name in table header (! with no field name)'
+          });
+          continue;
+        }
+        headers.push(fieldName);
       } else if (cell.length > 0) {
-        // Regular field name without ! prefix
+        // Regular field name without ! prefix - warn but allow
         headers.push(cell);
       }
     }
@@ -143,10 +185,24 @@ export class DataParser {
   }
 
   private parseTableRow(rowLine: string, headers: string[], lineNumber: number, recordIndex: number): DataEntry | null {
+    // Validate basic table syntax
+    if (!rowLine.startsWith('|') || !rowLine.endsWith('|')) {
+      this.addError(ErrorType.INVALID_TABLE_SYNTAX, lineNumber, {
+        message: 'Table row must start and end with pipe (|) character'
+      });
+    }
+    
     const cells = rowLine.split('|').map(cell => cell.trim()).filter(cell => cell.length > 0);
     
     if (cells.length === 0) {
       return null; // Empty row
+    }
+
+    // Validate column count matches headers
+    if (cells.length > headers.length) {
+      this.addError(ErrorType.INVALID_TABLE_SYNTAX, lineNumber, {
+        message: `Too many columns in table row: expected ${headers.length}, found ${cells.length}`
+      });
     }
 
     const fields = new Map<string, unknown>();
@@ -244,15 +300,30 @@ export class DataParser {
     const spaceIndex = fieldValueString.indexOf(' ');
     
     if (spaceIndex === -1) {
-      // Field name only, no value
+      // Field name only, no value - validate field name format
+      const fieldName = fieldValueString.trim();
+      if (!fieldName) {
+        this.addError(ErrorType.INVALID_FREEFORM_SYNTAX, this.getCurrentLine(), {
+          message: 'Empty field name in free-form field value'
+        });
+        return null;
+      }
+      
       return {
-        name: fieldValueString,
+        name: fieldName,
         value: ''
       };
     }
     
-    const name = fieldValueString.substring(0, spaceIndex);
+    const name = fieldValueString.substring(0, spaceIndex).trim();
     const value = fieldValueString.substring(spaceIndex + 1);
+    
+    if (!name) {
+      this.addError(ErrorType.INVALID_FREEFORM_SYNTAX, this.getCurrentLine(), {
+        message: 'Empty field name in free-form field value'
+      });
+      return null;
+    }
     
     return { name, value };
   }

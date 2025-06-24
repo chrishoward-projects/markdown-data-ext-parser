@@ -78,11 +78,11 @@ export class SchemaParser {
 
   private parseFieldDefinition(token: Token): FieldDefinition | null {
     const fieldDefString = token.value;
-    const parts = this.parseFieldComponents(fieldDefString);
+    const parts = this.parseFieldComponents(fieldDefString, token.position.line);
 
     if (!parts.name) {
-      this.addError(ErrorType.INVALID_FIELD_NAME, token.position.line, {
-        message: 'Field name is required'
+      this.addError(ErrorType.MISSING_FIELD_ATTRIBUTE, token.position.line, {
+        message: 'Field name is required in field definition'
       });
       return null;
     }
@@ -93,6 +93,15 @@ export class SchemaParser {
         message: 'Field name must start with a letter and contain only letters, numbers, and underscores'
       });
       return null;
+    }
+
+    // Validate data type if specified
+    if (parts.typeString && !this.isValidDataType(parts.typeString)) {
+      this.addError(ErrorType.INVALID_DATA_TYPE, token.position.line, {
+        fieldName: parts.name,
+        actual: parts.typeString,
+        message: `Invalid data type "${parts.typeString}" for field "${parts.name}"`
+      });
     }
 
     const field: FieldDefinition = {
@@ -107,9 +116,10 @@ export class SchemaParser {
     return field;
   }
 
-  private parseFieldComponents(fieldDefString: string): {
+  private parseFieldComponents(fieldDefString: string, lineNumber: number): {
     name?: string;
     type?: DataType;
+    typeString?: string;
     label?: string;
     format?: string | import('./types.js').DualFormat;
     validation?: import('./types.js').ValidationRules;
@@ -129,21 +139,47 @@ export class SchemaParser {
       const colonIndex = component.indexOf(':');
       
       if (colonIndex === -1) {
+        this.addError(ErrorType.MALFORMED_FIELD_ATTRIBUTE, lineNumber, {
+          message: `Invalid field attribute syntax "${component}" - expected "key: value" format`
+        });
         continue;
       }
 
       const key = component.substring(0, colonIndex).trim();
       let value = component.substring(colonIndex + 1).trim();
 
+      if (!value) {
+        this.addError(ErrorType.MISSING_FIELD_ATTRIBUTE, lineNumber, {
+          message: `Missing value for field attribute "${key}"`
+        });
+        continue;
+      }
+
+      // Validate known attribute keys
+      const validKeys = ['type', 'label', 'format', 'valid', 'required'];
+      if (!validKeys.includes(key)) {
+        this.addError(ErrorType.MALFORMED_FIELD_ATTRIBUTE, lineNumber, {
+          message: `Unknown field attribute "${key}" - valid attributes: ${validKeys.join(', ')}`
+        });
+      }
+
       // Handle multi-component values (like validation rules and dual formats)
       if ((key === 'valid' || key === 'format') && value.startsWith('{') && !value.endsWith('}')) {
         // Collect remaining components until we find the closing brace
+        let foundClose = false;
         for (let j = i + 1; j < components.length; j++) {
           value += ',' + components[j];
           i = j;
           if (components[j].includes('}')) {
+            foundClose = true;
             break;
           }
+        }
+        
+        if (!foundClose) {
+          this.addError(ErrorType.UNCLOSED_LITERAL, lineNumber, {
+            message: `Unclosed brace in "${key}" attribute`
+          });
         }
       }
 
@@ -157,6 +193,7 @@ export class SchemaParser {
     }
 
     if (parts.type) {
+      result.typeString = parts.type;
       result.type = parseDataType(parts.type);
     }
 
@@ -165,18 +202,40 @@ export class SchemaParser {
     }
 
     if (parts.format) {
-      result.format = parseFormat(parts.format);
+      try {
+        result.format = parseFormat(parts.format);
+      } catch (error) {
+        this.addError(ErrorType.MALFORMED_DUAL_FORMAT, lineNumber, {
+          message: `Invalid format syntax: ${error instanceof Error ? error.message : 'Unknown error'}`
+        });
+      }
     }
 
     if (parts.valid) {
-      result.validation = parseValidationRules(parts.valid);
+      try {
+        result.validation = parseValidationRules(parts.valid);
+      } catch (error) {
+        this.addError(ErrorType.MALFORMED_VALIDATION_RULES, lineNumber, {
+          message: `Invalid validation rules syntax: ${error instanceof Error ? error.message : 'Unknown error'}`
+        });
+      }
     }
 
     if (parts.required) {
+      if (parts.required.toLowerCase() !== 'true' && parts.required.toLowerCase() !== 'false') {
+        this.addError(ErrorType.MALFORMED_FIELD_ATTRIBUTE, lineNumber, {
+          message: `Invalid required value "${parts.required}" - must be "true" or "false"`
+        });
+      }
       result.required = parts.required.toLowerCase() === 'true';
     }
 
     return result;
+  }
+
+  private isValidDataType(typeString: string): boolean {
+    const validTypes = ['text', 'number', 'num', 'date', 'time', 'boolean', 'bool'];
+    return validTypes.includes(typeString.toLowerCase().trim());
   }
 
   private parseIndexDefinition(token: Token, fieldNames: Set<string>): IndexDefinition | null {
@@ -184,7 +243,7 @@ export class SchemaParser {
     const fields = parseIndexDefinition(indexDefString);
 
     if (fields.length === 0) {
-      this.addError(ErrorType.SYNTAX_ERROR, token.position.line, {
+      this.addError(ErrorType.MALFORMED_FIELD_ATTRIBUTE, token.position.line, {
         message: 'Index definition must specify at least one field'
       });
       return null;
@@ -193,7 +252,7 @@ export class SchemaParser {
     // Validate that all referenced fields exist
     for (const fieldName of fields) {
       if (!fieldNames.has(fieldName)) {
-        this.addError(ErrorType.INVALID_FIELD_NAME, token.position.line, {
+        this.addError(ErrorType.INVALID_INDEX_REFERENCE, token.position.line, {
           fieldName: fieldName,
           message: `Index references unknown field: ${fieldName}`
         });

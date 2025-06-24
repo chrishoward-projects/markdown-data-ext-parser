@@ -50,10 +50,13 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
     try {
       // Tokenize the markdown
       const tokenizer = new Tokenizer(markdown);
-      const tokens = tokenizer.tokenize();
+      const tokenizeResult = tokenizer.tokenize();
+      
+      // Add tokenization errors to state
+      state.errors.push(...tokenizeResult.errors);
 
       // Parse blocks
-      this.parseBlocks(tokens, state);
+      this.parseBlocks(tokenizeResult.tokens, state);
 
       // Validate data if requested
       if (mergedOptions.validateData) {
@@ -168,10 +171,22 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
 
     for (let i = 0; i < tokens.length; i++) {
       const token = tokens[i];
+      if (!token) continue;
       state.currentLine = token.position.line;
       state.currentColumn = token.position.column;
 
       if (token.type === TokenType.BLOCK_START) {
+        // Check for nested blocks
+        if (state.inBlock && currentBlock) {
+          state.errors.push({
+            type: ErrorType.NESTED_BLOCKS,
+            message: `Cannot start new block '${token.value}' - block '${currentBlock.type} ${currentBlock.schemaName}' is still open`,
+            lineNumber: token.position.line,
+            schemaName: currentBlock.schemaName
+          });
+          continue;
+        }
+
         const blockInfo = this.parseBlockStart(token);
         if (blockInfo) {
           currentBlock = blockInfo;
@@ -181,8 +196,34 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
           state.currentSchemaName = blockInfo.schemaName;
         }
       } else if (token.type === TokenType.BLOCK_END) {
+        if (!state.inBlock || !currentBlock) {
+          state.errors.push({
+            type: ErrorType.SYNTAX_ERROR,
+            message: 'Block end (!#) found without matching block start (!?)',
+            lineNumber: token.position.line
+          });
+          continue;
+        }
+
         if (currentBlock && state.inBlock) {
           currentBlock.endLine = token.position.line;
+          
+          // Check for empty blocks
+          const contentTokens = currentTokens.filter(t => 
+            t.type !== TokenType.NEWLINE && 
+            t.type !== TokenType.COMMENT &&
+            t.value.trim().length > 0
+          );
+          
+          if (contentTokens.length === 0) {
+            state.errors.push({
+              type: ErrorType.EMPTY_BLOCK,
+              message: `Empty ${currentBlock.type} block for schema '${currentBlock.schemaName}'`,
+              lineNumber: currentBlock.startLine,
+              schemaName: currentBlock.schemaName
+            });
+          }
+
           this.processBlock(currentBlock, currentTokens, state);
           currentBlock = null;
           currentTokens = [];
@@ -192,6 +233,15 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
         }
       } else if (state.inBlock) {
         currentTokens.push(token);
+      } else {
+        // Check for data content outside blocks
+        if (this.isDataContent(token)) {
+          state.errors.push({
+            type: ErrorType.MISSING_BLOCK_START,
+            message: 'Data content found without proper block declaration (!? datadef/data)',
+            lineNumber: token.position.line
+          });
+        }
       }
     }
 
@@ -233,6 +283,15 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
     return null;
   }
 
+  private isDataContent(token: Token): boolean {
+    return token.type === TokenType.FIELD_NAME || 
+           token.type === TokenType.FIELD_VALUE ||
+           token.type === TokenType.TABLE_HEADER ||
+           token.type === TokenType.TABLE_ROW ||
+           token.type === TokenType.RECORD_SEPARATOR ||
+           token.type === TokenType.INDEX_DEFINITION;
+  }
+
   private processBlock(blockInfo: BlockInfo, tokens: Token[], state: ParserState): void {
     if (blockInfo.type === 'datadef') {
       this.processSchemaDefinition(blockInfo, tokens, state);
@@ -256,15 +315,16 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
     state.errors.push(...result.errors);
   }
 
-  private async processDataEntry(blockInfo: BlockInfo, tokens: Token[], state: ParserState): Promise<void> {
+  private processDataEntry(blockInfo: BlockInfo, tokens: Token[], state: ParserState): void {
     let schema = state.schemas.get(blockInfo.schemaName);
     
-    // Load external schema if needed
+    // Check for external schema reference but don't load synchronously
     if (!schema && blockInfo.externalPath && state.options.loadExternalSchemas) {
-      schema = await this.loadExternalSchema(blockInfo.externalPath, state.options);
-      if (schema) {
-        state.schemas.set(blockInfo.schemaName, schema);
-      }
+      state.warnings.push({
+        message: `External schema reference '${blockInfo.externalPath}' - external loading not supported in synchronous parsing`,
+        lineNumber: blockInfo.startLine,
+        schemaName: blockInfo.schemaName
+      });
     }
     
     if (!schema) {

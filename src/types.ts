@@ -16,7 +16,26 @@ export enum ErrorType {
   BLOCK_NOT_CLOSED = 'block_not_closed',
   INVALID_BLOCK_TYPE = 'invalid_block_type',
   DUPLICATE_FIELD = 'duplicate_field',
-  MISSING_REQUIRED_FIELD = 'missing_required_field'
+  MISSING_REQUIRED_FIELD = 'missing_required_field',
+  
+  // New comprehensive syntax validation error types
+  MISSING_BLOCK_START = 'missing_block_start',
+  INVALID_BLOCK_SYNTAX = 'invalid_block_syntax',
+  NESTED_BLOCKS = 'nested_blocks',
+  EMPTY_BLOCK = 'empty_block',
+  INVALID_SCHEMA_NAME = 'invalid_schema_name',
+  MISSING_FIELD_ATTRIBUTE = 'missing_field_attribute',
+  INVALID_DATA_TYPE = 'invalid_data_type',
+  MALFORMED_FIELD_ATTRIBUTE = 'malformed_field_attribute',
+  INVALID_INDEX_REFERENCE = 'invalid_index_reference',
+  MIXED_DATA_FORMAT = 'mixed_data_format',
+  INVALID_TABLE_SYNTAX = 'invalid_table_syntax',
+  INVALID_FREEFORM_SYNTAX = 'invalid_freeform_syntax',
+  UNCLOSED_LITERAL = 'unclosed_literal',
+  INVALID_CHARACTER = 'invalid_character',
+  MALFORMED_DUAL_FORMAT = 'malformed_dual_format',
+  MALFORMED_VALIDATION_RULES = 'malformed_validation_rules',
+  MALFORMED_EXTERNAL_REFERENCE = 'malformed_external_reference'
 }
 
 export interface DualFormat {
