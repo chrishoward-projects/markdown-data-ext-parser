@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Parser Test</title>
+</head>
+<body>
+    <h1>Simple Parser Test</h1>
+    <div id="output">Loading...</div>
+
+    <script type="module">
+        try {
+            console.log('Loading parser...');
+            const { MarkdownDataExtensionParser } = await import('./dist/index.mjs');
+            
+            console.log('Parser loaded, creating instance...');
+            const parser = new MarkdownDataExtensionParser();
+            
+            console.log('Parsing markdown...');
+            const result = parser.parse(`!? datadef test
+!fname: id, type: number
+!fname: name, type: text
+!#
+
+!? data test
+| !id | !name |
+|-----|-------|
+| 1   | Alice |
+!#`);
+            
+            console.log('Parse result:', result);
+            
+            document.getElementById('output').innerHTML = `
+                <h2>Parser Results:</h2>
+                <p>Entries found: ${result.metadata.dataEntriesFound}</p>
+                <p>Schemas found: ${result.metadata.schemasFound}</p>
+                <pre>${JSON.stringify(result, (key, value) => {
+                    if (value instanceof Map) {
+                        return Object.fromEntries(value);
+                    }
+                    return value;
+                }, 2)}</pre>
+            `;
+            
+        } catch (error) {
+            console.error('Error:', error);
+            document.getElementById('output').innerHTML = `<p>Error: ${error.message}</p><pre>${error.stack}</pre>`;
+        }
+    </script>
+</body>
+</html>

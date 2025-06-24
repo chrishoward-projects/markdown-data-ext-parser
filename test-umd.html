@@ -501,7 +501,7 @@ This database is updated monthly and includes all active employees. Salary infor
                 })),
                 data: Array.from(result.data.entries()).map(([schemaName, entries]) => ({
                     schemaName,
-                    entries: entries.map(entry => entry.fields)
+                    entries: entries.map(entry => Object.fromEntries(entry.fields))
                 })),
                 metadata: result.metadata,
                 errors: result.errors,

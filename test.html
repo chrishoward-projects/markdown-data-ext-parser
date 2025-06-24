@@ -305,16 +305,16 @@ Example:
 This document demonstrates the Markdown Data Extension with a comprehensive employee database.
 
 !? datadef employees
-!fname: id, type: number, label: "Employee ID", required: true
+!fname: employee_id, type: number, label: "Employee ID", required: true
 !fname: name, type: text, label: "Full Name", required: true, valid: {min: 2, max: 50}
 !fname: email, type: text, format: "email", required: true
-!fname: department, type: text, valid: {options: ["Engineering", "Sales", "HR", "Marketing", "Finance"]}
-!fname: salary, type: number, format: "$n,n.##", valid: {min: 30000, max: 300000}
-!fname: start_date, type: date, format: {"DD/MM/YYYY", "MMM DD, YYYY"}
-!fname: active, type: boolean, format: "y/n"
-!fname: skills, type: text, format: "title"
-!index: "id"
-!index: "department+active"
+!fname: phone, type: text, format: {"##########", "(##) #### ####"}, label: "Phone Number"
+!fname: department, type: text, required: true, label: "Department"
+!fname: position, type: text, required: true, label: "Job Position"
+!fname: salary, type: number, format: "currency", label: "Annual Salary"
+!fname: start_date, type: date, format: {"MM/DD/YYYY", "MMM DD, YYYY"}, required: true, label: "Start Date"
+!fname: is_active, type: boolean, format: "yes/no", required: true, label: "Active Status"
+!fname: manager_id, type: number, label: "Manager ID"
 !#
 
 ## Employee Records

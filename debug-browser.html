@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Browser Issue</title>
+</head>
+<body>
+    <h1>Debug Browser Data Loading</h1>
+    <div id="output"></div>
+
+    <script type="module">
+        try {
+            const { MarkdownDataExtensionParser } = await import('./dist/index.mjs');
+            
+            const parser = new MarkdownDataExtensionParser();
+            
+            const testMarkdown = `!? datadef employees
+!fname: employee_id, type: number, required: true
+!fname: name, type: text, required: true
+!fname: email, type: text, format: "email", required: true
+!#
+
+!? data employees
+| !employee_id | !name | !email |
+|--------------|-------|--------|
+| 1001 | Alice Johnson | alice.johnson@company.com |
+| 1002 | Bob Smith | bob.smith@company.com |
+!#`;
+
+            console.log('Testing in browser...');
+            const result = parser.parse(testMarkdown);
+            
+            console.log('Raw result:', result);
+            console.log('Data entries found:', result.metadata.dataEntriesFound);
+            console.log('Schemas:', result.schemas);
+            console.log('Data:', result.data);
+            
+            // Check if data is a Map
+            console.log('result.data instanceof Map:', result.data instanceof Map);
+            
+            if (result.data instanceof Map) {
+                for (const [schemaName, entries] of result.data) {
+                    console.log(`Schema: ${schemaName}, Entries count: ${entries.length}`);
+                    entries.forEach((entry, index) => {
+                        console.log(`  Entry ${index}:`, entry);
+                        console.log(`  Entry.fields type:`, typeof entry.fields);
+                        console.log(`  Entry.fields instanceof Map:`, entry.fields instanceof Map);
+                        console.log(`  Entry.fields size:`, entry.fields?.size);
+                        if (entry.fields instanceof Map) {
+                            console.log(`  Entry.fields keys:`, Array.from(entry.fields.keys()));
+                            console.log(`  Entry.fields values:`, Array.from(entry.fields.values()));
+                            console.log(`  Entry.fields as Object:`, Object.fromEntries(entry.fields));
+                        }
+                    });
+                }
+            }
+            
+            document.getElementById('output').innerHTML = '<pre>' + JSON.stringify(result, null, 2) + '</pre>';
+            
+        } catch (error) {
+            console.error('Error:', error);
+            document.getElementById('output').innerHTML = '<pre>Error: ' + error.message + '</pre>';
+        }
+    </script>
+</body>
+</html>
