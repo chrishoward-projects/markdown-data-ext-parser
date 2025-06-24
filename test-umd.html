@@ -327,7 +327,7 @@ Our employee database contains comprehensive information about team members acro
 !fname: department, type: text, required: true, label: "Department"
 !fname: position, type: text, required: true, label: "Job Position"
 !fname: salary, type: number, format: "currency", label: "Annual Salary"
-!fname: start_date, type: date, format: {"MM/DD/YYYY", "MMM DD, YYYY"}, required: true, label: "Start Date"
+!fname: start_date, type: date, format: {"DD/MM/YYYY", "DD MMM YYYY"}, required: true, label: "Start Date"
 !fname: is_active, type: boolean, format: "yes/no", required: true, label: "Active Status"
 !fname: manager_id, type: number, label: "Manager ID"
 !#
@@ -339,13 +339,13 @@ Our current team members:
 !? data employees
 | !employee_id | !name | !email | !phone | !department | !position | !salary | !start_date | !is_active | !manager_id |
 |--------------|-------|--------|---------|-------------|-----------|---------|-------------|------------|-------------|
-| 1001 | Alice Johnson | alice.johnson@company.com | 5551234567 | Engineering | Senior Developer | 95000 | 01/15/2020 | yes | 1005 |
-| 1002 | Bob Smith | bob.smith@company.com | 5552345678 | Marketing | Marketing Manager | 75000 | 03/22/2021 | yes | 1006 |
-| 1003 | Carol Davis | carol.davis@company.com | 5553456789 | Sales | Sales Representative | 55000 | 06/10/2022 | yes | 1007 |
-| 1004 | David Wilson | david.wilson@company.com | 5554567890 | Engineering | Junior Developer | 65000 | 09/05/2022 | yes | 1005 |
-| 1005 | Eve Brown | eve.brown@company.com | 5555678901 | Engineering | Engineering Manager | 120000 | 11/01/2019 | yes |  |
-| 1006 | Frank Miller | frank.miller@company.com | 5556789012 | Marketing | Marketing Director | 110000 | 02/14/2020 | yes |  |
-| 1007 | Grace Lee | grace.lee@company.com | 5557890123 | Sales | Sales Director | 105000 | 04/18/2020 | yes |  |
+| 1001 | Alice Johnson | alice.johnson@company.com | 5551234567 | Engineering | Senior Developer | 95000 | 15/01/2020 | yes | 1005 |
+| 1002 | Bob Smith | bob.smith@company.com | 5552345678 | Marketing | Marketing Manager | 75000 | 22/03/2021 | yes | 1006 |
+| 1003 | Carol Davis | carol.davis@company.com | 5553456789 | Sales | Sales Representative | 55000 | 10/06/2022 | yes | 1007 |
+| 1004 | David Wilson | david.wilson@company.com | 5554567890 | Engineering | Junior Developer | 65000 | 05/09/2022 | yes | 1005 |
+| 1005 | Eve Brown | eve.brown@company.com | 5555678901 | Engineering | Engineering Manager | 120000 | 01/11/2019 | yes |  |
+| 1006 | Frank Miller | frank.miller@company.com | 5556789012 | Marketing | Marketing Director | 110000 | 14/02/2020 | yes |  |
+| 1007 | Grace Lee | grace.lee@company.com | 5557890123 | Sales | Sales Director | 105000 | 18/04/2020 | yes |  |
 !#
 
 ## Additional Notes
