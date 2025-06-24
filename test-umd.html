@@ -327,7 +327,7 @@ Our employee database contains comprehensive information about team members acro
 !fname: department, type: text, required: true, label: "Department"
 !fname: position, type: text, required: true, label: "Job Position"
 !fname: salary, type: number, format: "currency", label: "Annual Salary"
-!fname: start_date, type: date, format: "MM/DD/YYYY", required: true, label: "Start Date"
+!fname: start_date, type: date, format: {"MM/DD/YYYY", "MMM DD, YYYY"}, required: true, label: "Start Date"
 !fname: is_active, type: boolean, format: "yes/no", required: true, label: "Active Status"
 !fname: manager_id, type: number, label: "Manager ID"
 !#
