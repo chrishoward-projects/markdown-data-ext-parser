@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2025-06-24
+
+### Added
+- Comprehensive syntax validation system with 15+ new error types
+  - Block structure validation (nested blocks, empty blocks, unclosed blocks)
+  - Schema name validation with regex pattern checking
+  - Field definition syntax validation (attributes, data types, formats)
+  - Data format validation (mixed tabular/free-form detection)
+  - Table syntax validation (pipe usage, column alignment, headers)
+  - Free-form syntax validation (field names, separators)
+  - External reference syntax validation
+  - Dual format syntax validation for display patterns
+  - Validation rules syntax validation for field constraints
+  - Unclosed literal detection (braces, quotes, brackets)
+- Enhanced error reporting with precise line numbers and context
+- Parser-level syntax validation while maintaining renderer separation
+- Improved tokenizer with comprehensive literal and character validation
+
+### Fixed
+- Field name mismatches between schema definitions and table headers in test files
+- Data entries showing as empty objects due to field mapping issues
+- Test interface field naming consistency issues
+
 ## [0.1.1] - 2025-06-23
 
 ### Added
