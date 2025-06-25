@@ -18,7 +18,7 @@
     <script>
         const parser = new MarkdownDataExtensionParser.MarkdownDataExtensionParser();
         
-        // Test data with type mismatches to generate warnings
+        // Test data with various date formats and type mismatches
         const testMarkdown = `!? datadef test_validation
 !fname: id, type: number, required: true, label: "ID"
 !fname: name, type: text, required: true, label: "Name"
@@ -32,8 +32,11 @@
 | !id | !name | !email | !active | !start_date | !score |
 |-----|-------|--------|---------|-------------|--------|
 | 1001 | Alice Johnson | alice@company.com | yes | 15/01/2020 | 95.5 |
-| not_a_number | Bob Smith | invalid-email | maybe | not-a-date | not_a_number |
-| 1003 | Carol Davis | carol@company.com | true | 10/06/2022 | 88 |
+| 1002 | Bob Smith | bob@company.com | true | Jan 15, 2021 | 87.2 |
+| 1003 | Carol Davis | carol@company.com | yes | 2022-06-10 | 88 |
+| 1004 | David Wilson | david@company.com | false | 15 Mar 2023 | 92.1 |
+| not_a_number | Eve Brown | invalid-email | maybe | not-a-date | not_a_number |
+| 1006 | Frank Miller | frank@company.com | yes | 20240815 | 89.5 |
 !#`;
 
         console.log('Testing type validation...');
