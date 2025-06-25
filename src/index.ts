@@ -99,4 +99,4 @@ export async function parseMarkdownFile(filePath: string, options?: any) {
 }
 
 // Version
-export const VERSION = '1.0.0';
+export const VERSION = '0.2.0';

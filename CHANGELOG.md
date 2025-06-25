@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2025-06-25
+
+### BREAKING CHANGES
+- **Removed data validation beyond basic type checking** - This library now focuses purely on parsing structure and converting types. All business rule validation has been removed to maintain clear separation of concerns. Applications should implement their own validation logic or use a separate validation library.
+
+### Added
+- **Comprehensive developer documentation**
+  - Complete extension development guide (`docs/DEVELOPERS.md`)
+  - Full API reference documentation (`docs/API.md`)
+  - System architecture overview (`docs/ARCHITECTURE.md`)
+  - Contribution guidelines (`docs/CONTRIBUTING.md`)
+  - Extension examples for custom parsers and formatters
+- **Improved project organization**
+  - Reorganized validation modules into dedicated `src/validation/` folder
+  - Moved data parser to `src/parsers/data.ts` for consistency
+  - Created organized directory structure: `debug/`, `examples/`, `test/`
+  - Updated development server to work with new file organization
+
+### Removed
+- **ValidationRules interface** - No longer needed as validation is left to consuming applications
+- **Business rule validation methods** - Removed from all parser and validator classes
+- **Validation documentation and examples** - Custom validator examples and documentation removed
+- **parseValidationRules utility function** - No longer needed without validation rules
+
+### Changed
+- **Parser scope clarification** - Library now explicitly focused on parsing and type conversion only
+- **Validation methods simplified** - Only basic type checking remains for parsing purposes
+- **Documentation updated** - All references to data validation removed, focus on parsing capabilities
+- **Project structure** - Root directory cleaned up with files moved to appropriate subdirectories
+
+### Fixed
+- **Import path consistency** - Updated relative imports after file reorganization
+- **Development workflow** - Updated serve.py and README references for new file locations
+- **Build process** - Ensured all changes pass linting and type checking
+
 ## [0.1.2] - 2025-06-24
 
 ### Added

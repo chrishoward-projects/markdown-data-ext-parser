@@ -1,6 +1,6 @@
 {
   "name": "mdl-data-extension-parser",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "TypeScript parser library for Markdown Data Extension syntax",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
