@@ -15,20 +15,16 @@ import {
 } from './types.js';
 import { Tokenizer } from './tokenizer.js';
 import { SchemaParser, validateSchemaDefinition } from './parsers/schema.js';
-import { DataParser, validateDataEntries } from './parsers/data.js';
+import { DataParser } from './parsers/data.js';
 import { DataTypeConverter } from './data-types.js';
-import { DataValidator } from './validation/syntax.js';
 import { createDefaultParseOptions, SchemaCache } from './utils.js';
 
 export class MarkdownDataExtensionParser implements MarkdownDataParser {
   private schemaCache: SchemaCache;
   private dataTypeConverter: DataTypeConverter;
-  private validator: DataValidator;
-
   constructor() {
     this.schemaCache = new SchemaCache();
     this.dataTypeConverter = new DataTypeConverter();
-    this.validator = new DataValidator();
   }
 
   parse(markdown: string, options?: ParseOptions): ParseResult {
@@ -61,10 +57,8 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
       // Parse blocks
       this.parseBlocks(tokenizeResult.tokens, state);
 
-      // Validate data if requested
-      if (mergedOptions.validateData) {
-        this.validateAllData(state);
-      }
+      // Note: Data validation is left to consuming applications
+      // This parser focuses on structure and type conversion only
 
     } catch (error) {
       state.errors.push({
@@ -136,45 +130,28 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
     const errors: import('./types.js').ParseError[] = [];
     const warnings: import('./types.js').ParseError[] = [];
     
-    // Only basic structural validation (parser-level errors)
-    errors.push(...validateDataEntries(data, schema));
-    
-    // Convert data types and validate types (generate warnings for type mismatches)
+    // Convert data types for basic parsing functionality
     for (const entry of data) {
       const schemaFields = new Map(schema.fields.map(f => [f.name, f]));
       
       for (const [fieldName, value] of entry.fields) {
         const field = schemaFields.get(fieldName);
         if (field) {
-          // Validate type before conversion - add warning if type doesn't match
-          // Use existing formatter validation infrastructure
-          let isValid = true;
-          let validationMessage = '';
-          
-          if (field.format) {
-            // Validate specific format if field has one
-            isValid = this.validator.validateFormat(value, field.format, field.type);
-            validationMessage = `Field '${fieldName}' expects ${field.type} with format '${field.format}' but got '${value}'`;
-          } else {
-            // Validate basic type for fields without specific format
-            isValid = this.validator.validateType(value, field.type);
-            validationMessage = `Field '${fieldName}' expects ${field.type} but got '${value}'`;
-          }
-          
-          if (!isValid) {
-            warnings.push({
+          try {
+            // Convert the value to the expected type
+            const convertedValue = this.dataTypeConverter.convertValue(value, field);
+            // Update the entry with converted value
+            entry.fields.set(fieldName, convertedValue);
+          } catch (error) {
+            // Type conversion failed - add error
+            errors.push({
               type: 'TYPE_MISMATCH' as any,
-              message: validationMessage,
+              message: `Failed to convert '${value}' to ${field.type}`,
               lineNumber: entry.lineNumber || 0,
               schemaName: schema.name,
               fieldName: fieldName
             });
           }
-          
-          // Convert the value (even if validation failed, for best-effort parsing)
-          const convertedValue = this.dataTypeConverter.convertValue(value, field);
-          // Update the entry with converted value
-          entry.fields.set(fieldName, convertedValue);
         }
       }
     }
@@ -383,14 +360,4 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
   }
 
 
-  private validateAllData(state: ParserState): void {
-    for (const [schemaName, entries] of state.data) {
-      const schema = state.schemas.get(schemaName);
-      if (schema) {
-        const validationResult = this.validateData(entries, schema);
-        state.errors.push(...validationResult.errors);
-        state.warnings.push(...validationResult.warnings);
-      }
-    }
-  }
 }

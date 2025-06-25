@@ -415,22 +415,7 @@ interface FieldDefinition {
   type: DataType;                  // Data type
   label?: string;                  // Human-readable label
   format?: string | DualFormat;    // Format specification
-  validation?: ValidationRules;    // Validation rules
   required?: boolean;              // Whether field is required
-}
-```
-
-### ValidationRules
-
-```typescript
-interface ValidationRules {
-  required?: boolean;              // Field is required
-  min?: number;                    // Minimum value (numbers) or length (strings)
-  max?: number;                    // Maximum value (numbers) or length (strings)
-  pattern?: string;                // Regular expression pattern
-  options?: string[];              // Allowed values
-  email?: boolean;                 // Email format validation
-  url?: boolean;                   // URL format validation
 }
 ```
 
@@ -654,7 +639,6 @@ function validateDataEntries(entries: DataEntry[], schema: DataSchema): ParseErr
 function isValidFieldName(name: string): boolean
 function parseDataType(typeString: string): DataType
 function parseFormat(formatString: string): string | DualFormat
-function parseValidationRules(rulesString: string): ValidationRules
 function parseIndexDefinition(indexString: string): IndexDefinition
 function normalizeWhitespace(text: string): string
 function escapeRegExp(string: string): string

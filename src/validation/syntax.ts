@@ -46,25 +46,11 @@ export class DataValidator {
   }
 
   /**
-   * Validates text format requirements (email, URL, etc.)
+   * Basic format check for parsing compatibility
    */
   private validateTextFormat(value: string, format: string | DualFormat): boolean {
-    if (typeof format !== 'string') return true;
-    
-    const formatLower = format.toLowerCase();
-    
-    switch (formatLower) {
-      case 'email':
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-      case 'url':
-        try {
-          new URL(value);
-          return true;
-        } catch {
-          return false;
-        }
-      default:
-        return true;
-    }
+    // For a parser library, we just ensure the value can be processed
+    // Actual validation of email/URL format is left to consuming applications
+    return typeof value === 'string';
   }
 }

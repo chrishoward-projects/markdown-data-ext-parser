@@ -12,7 +12,7 @@ import {
   isValidFieldName, 
   parseDataType, 
   parseFormat, 
-  parseValidationRules, 
+ 
   parseIndexDefinition,
   formatErrorMessage 
 } from '../utils.js';
@@ -109,7 +109,6 @@ export class SchemaParser {
       type: parts.type || DataType.TEXT,
       label: parts.label,
       format: parts.format,
-      validation: parts.validation,
       required: parts.required
     };
 
@@ -211,15 +210,7 @@ export class SchemaParser {
       }
     }
 
-    if (parts.valid) {
-      try {
-        result.validation = parseValidationRules(parts.valid);
-      } catch (error) {
-        this.addError(ErrorType.MALFORMED_VALIDATION_RULES, lineNumber, {
-          message: `Invalid validation rules syntax: ${error instanceof Error ? error.message : 'Unknown error'}`
-        });
-      }
-    }
+    // Skip validation rules - this parser focuses on structure, not data validation
 
     if (parts.required) {
       if (parts.required.toLowerCase() !== 'true' && parts.required.toLowerCase() !== 'false') {

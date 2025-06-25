@@ -43,22 +43,11 @@ export interface DualFormat {
   display: string;
 }
 
-export interface ValidationRules {
-  required?: boolean;
-  min?: number;
-  max?: number;
-  pattern?: string;
-  options?: string[];
-  email?: boolean;
-  url?: boolean;
-}
-
 export interface FieldDefinition {
   name: string;
   type: DataType;
   label?: string;
   format?: string | DualFormat;
-  validation?: ValidationRules;
   required?: boolean;
 }
 

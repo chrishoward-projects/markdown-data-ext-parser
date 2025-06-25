@@ -1,4 +1,4 @@
-import { DataType, DualFormat, ValidationRules, SchemaCache as ISchemaCache, DataSchema } from './types.js';
+import { DataType, DualFormat, SchemaCache as ISchemaCache, DataSchema } from './types.js';
 
 export class SchemaCache implements ISchemaCache {
   public cache = new Map<string, DataSchema>();
@@ -66,61 +66,6 @@ export function parseFormat(formatString: string): string | DualFormat {
   return trimmed.replace(/^["']|["']$/g, '');
 }
 
-export function parseValidationRules(validString: string): ValidationRules {
-  const rules: ValidationRules = {};
-  
-  try {
-    const content = validString.trim();
-    if (!content.startsWith('{') || !content.endsWith('}')) {
-      return rules;
-    }
-    
-    const rulesContent = content.slice(1, -1);
-    const pairs = rulesContent.split(',').map(pair => pair.trim());
-    
-    for (const pair of pairs) {
-      const colonIndex = pair.indexOf(':');
-      if (colonIndex === -1) continue;
-      
-      const key = pair.substring(0, colonIndex).trim();
-      const valueStr = pair.substring(colonIndex + 1).trim();
-      
-      switch (key) {
-        case 'required':
-          rules.required = valueStr === 'true';
-          break;
-        case 'min':
-          rules.min = parseFloat(valueStr);
-          break;
-        case 'max':
-          rules.max = parseFloat(valueStr);
-          break;
-        case 'pattern':
-          rules.pattern = valueStr.replace(/^["']|["']$/g, '');
-          break;
-        case 'email':
-          rules.email = valueStr === 'true';
-          break;
-        case 'url':
-          rules.url = valueStr === 'true';
-          break;
-        case 'options':
-          if (valueStr.startsWith('[') && valueStr.endsWith(']')) {
-            const optionsContent = valueStr.slice(1, -1);
-            rules.options = optionsContent
-              .split(',')
-              .map(opt => opt.trim().replace(/^["']|["']$/g, ''))
-              .filter(opt => opt.length > 0);
-          }
-          break;
-      }
-    }
-  } catch {
-    // Invalid validation rules format, return empty rules
-  }
-  
-  return rules;
-}
 
 export function parseIndexDefinition(indexString: string): string[] {
   const trimmed = indexString.trim().replace(/^["']|["']$/g, '');

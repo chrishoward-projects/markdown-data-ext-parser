@@ -124,12 +124,3 @@ export class DataParser {
   }
 }
 
-/**
- * Standalone function for validating data entries against a schema
- * Uses HeaderValidator for consistent validation logic
- */
-export function validateDataEntries(entries: DataEntry[], schema: DataSchema): ParseError[] {
-  // Use HeaderValidator for consistent validation logic
-  const headerValidator = new HeaderValidator();
-  return headerValidator.validateDataEntries(entries, schema);
-}

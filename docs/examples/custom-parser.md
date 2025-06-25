@@ -209,10 +209,10 @@ export class JsonParser extends BaseParser {
     field: FieldDefinition, 
     lineNumber: number
   ): unknown {
-    // Basic type validation
-    const isValid = this.validateValueType(value, field);
+    // Basic type checking for conversion
+    const canConvert = this.canConvertValueType(value, field);
     
-    if (!isValid) {
+    if (!canConvert) {
       this.addError(ErrorType.TYPE_MISMATCH, lineNumber, {
         fieldName: field.name,
         message: `Field '${field.name}' expects ${field.type} but got ${typeof value}`
@@ -223,7 +223,7 @@ export class JsonParser extends BaseParser {
     return this.convertValue(value, field);
   }
 
-  private validateValueType(value: unknown, field: FieldDefinition): boolean {
+  private canConvertValueType(value: unknown, field: FieldDefinition): boolean {
     switch (field.type) {
       case 'text':
         return typeof value === 'string';
@@ -233,9 +233,9 @@ export class JsonParser extends BaseParser {
         return typeof value === 'boolean';
       case 'date':
       case 'time':
-        return typeof value === 'string'; // Will be validated during conversion
+        return typeof value === 'string'; // Will be converted during processing
       default:
-        return true; // Unknown type, let other validators handle
+        return true; // Unknown type, assume convertible
     }
   }
 
@@ -438,7 +438,7 @@ describe('JsonParser', () => {
     expect(result[0].fields.get('inStock')).toBe(true);
   });
 
-  test('should handle validation errors', () => {
+  test('should handle parsing errors', () => {
     const tokens: Token[] = [
       {
         type: CustomTokenType.JSON_OBJECT as any,

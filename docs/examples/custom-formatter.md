@@ -8,7 +8,7 @@ We want to add custom formatting for:
 1. **Currency values** with multi-currency support and localization
 2. **Geographic coordinates** with multiple display formats (DMS, decimal, etc.)
 3. **File sizes** with automatic unit conversion (bytes, KB, MB, GB, etc.)
-4. **Social media handles** with platform-specific validation and formatting
+4. **Social media handles** with platform-specific formatting
 
 ## Implementation
 
@@ -50,7 +50,6 @@ export interface SocialHandleFormat {
   platform: 'twitter' | 'instagram' | 'facebook' | 'linkedin' | 'github';
   includeAt?: boolean;        // Include @ symbol
   includeUrl?: boolean;       // Include full URL
-  validateExists?: boolean;   // Validate handle exists (would require API)
 }
 ```
 
@@ -644,54 +643,6 @@ export class SocialHandleFormatter {
     return cleaned;
   }
 
-  validateSocialHandle(value: string, format: SocialHandleFormat): { valid: boolean; message?: string } {
-    const config = this.platformConfigs[format.platform];
-    if (!config) {
-      return { valid: false, message: `Unsupported platform: ${format.platform}` };
-    }
-
-    // Clean the input
-    let handle = value.trim();
-    if (handle.startsWith(config.urlPattern)) {
-      handle = handle.substring(config.urlPattern.length);
-    }
-    if (handle.startsWith('@')) {
-      handle = handle.substring(1);
-    }
-
-    // Check format
-    const match = handle.match(config.handlePattern.source.replace(/^\^@\?/, '^'));
-    if (!match) {
-      return {
-        valid: false,
-        message: `Invalid ${format.platform} handle format. Must contain only ${config.allowedChars}`
-      };
-    }
-
-    // Check length
-    if (handle.length > config.maxLength) {
-      return {
-        valid: false,
-        message: `${format.platform} handle too long (max ${config.maxLength} characters)`
-      };
-    }
-
-    // Platform-specific validations
-    switch (format.platform) {
-      case 'facebook':
-        if (handle.length < 5) {
-          return { valid: false, message: 'Facebook usernames must be at least 5 characters' };
-        }
-        break;
-      case 'linkedin':
-        if (handle.length < 3) {
-          return { valid: false, message: 'LinkedIn usernames must be at least 3 characters' };
-        }
-        break;
-    }
-
-    return { valid: true };
-  }
 }
 ```
 
@@ -997,4 +948,4 @@ describe('Custom Formatters', () => {
 });
 ```
 
-This comprehensive example demonstrates how to extend the formatting system with complex custom formatters that handle parsing, validation, and multiple display formats while maintaining integration with the existing parser infrastructure.
+This comprehensive example demonstrates how to extend the formatting system with complex custom formatters that handle parsing and multiple display formats while maintaining integration with the existing parser infrastructure.

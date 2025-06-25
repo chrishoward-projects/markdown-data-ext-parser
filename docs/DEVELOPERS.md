@@ -7,10 +7,8 @@ This guide covers how to extend and customize the Markdown Data Extension Parser
 - [Architecture Overview](#architecture-overview)
 - [Extension Points](#extension-points)
 - [Creating Custom Parsers](#creating-custom-parsers)
-- [Custom Data Type Validators](#custom-data-type-validators)
 - [Custom Formatters](#custom-formatters)
 - [Adding New Token Types](#adding-new-token-types)
-- [Custom Validation Rules](#custom-validation-rules)
 - [Plugin Development](#plugin-development)
 - [Testing Extensions](#testing-extensions)
 - [Best Practices](#best-practices)
@@ -40,8 +38,8 @@ The library follows a modular, layered architecture with clear separation of con
                       │
 ┌─────────────────────┴───────────────────────────────────┐
 │               Foundation Layer                          │
-│  • Tokenizer  • Validators  • Formatters              │
-│  • Data Type Converters  • Error Handling             │
+│  • Tokenizer  • Formatters  • Type Converters         │
+│  • Error Handling  • Syntax Parsing                  │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -61,17 +59,12 @@ The library provides several well-defined extension points:
 - **DataParser**: Orchestrates format detection and delegation
 - **MarkdownDataParser**: Interface for complete parser implementations
 
-### 2. Validation Extensions
-- **Validator classes**: Type-specific validation logic
-- **ValidationRules**: Custom rule definitions
-- **HeaderValidator**: Schema compliance validation
-
-### 3. Formatting Extensions
+### 2. Formatting Extensions
 - **DataFormatter**: Interface for value formatting
 - **DataTypeConverter**: Type conversion and transformation
 - **MarkdownDataFormatter**: Complete formatting implementation
 
-### 4. Tokenization Extensions
+### 3. Tokenization Extensions
 - **Tokenizer**: Lexical analysis and token generation
 - **Token types**: Custom syntax recognition
 
@@ -167,73 +160,6 @@ export class ExtendedDataParser extends DataParser {
     }
     
     return super.detectDataFormat() as any;
-  }
-}
-```
-
-## Custom Data Type Validators
-
-### Creating Type-Specific Validators
-
-```typescript
-import { DataType, FieldDefinition, ValidationRules } from 'mdl-data-extension-parser';
-
-export class CustomTypeValidator {
-  validateGeoCoordinate(value: unknown): boolean {
-    if (typeof value !== 'string') return false;
-    
-    // Validate latitude,longitude format
-    const coordPattern = /^-?\d+\.\d+,-?\d+\.\d+$/;
-    return coordPattern.test(value);
-  }
-
-  validateCustomType(value: unknown, field: FieldDefinition): boolean {
-    switch (field.type) {
-      case 'geo_coordinate' as DataType:
-        return this.validateGeoCoordinate(value);
-      
-      case 'phone_number' as DataType:
-        return this.validatePhoneNumber(value, field.validation);
-      
-      default:
-        return true; // Unknown type, let other validators handle
-    }
-  }
-
-  private validatePhoneNumber(value: unknown, rules?: ValidationRules): boolean {
-    if (typeof value !== 'string') return false;
-    
-    // International phone number validation
-    const phonePattern = /^\+?[\d\s\-\(\)]+$/;
-    if (!phonePattern.test(value)) return false;
-    
-    // Apply custom validation rules
-    if (rules?.pattern) {
-      const customPattern = new RegExp(rules.pattern);
-      return customPattern.test(value);
-    }
-    
-    return true;
-  }
-}
-```
-
-### Extending the Main Validator
-
-```typescript
-import { TypeValidator } from 'mdl-data-extension-parser';
-
-export class ExtendedTypeValidator extends TypeValidator {
-  private customValidator = new CustomTypeValidator();
-
-  validateValue(value: unknown, field: FieldDefinition): boolean {
-    // Try custom validation first
-    if (this.customValidator.validateCustomType(value, field)) {
-      return true;
-    }
-    
-    // Fall back to standard validation
-    return super.validateValue(value, field);
   }
 }
 ```
@@ -471,115 +397,6 @@ export class ExtendedTokenizer extends Tokenizer {
 }
 ```
 
-## Custom Validation Rules
-
-### Extending ValidationRules
-
-```typescript
-import { ValidationRules } from 'mdl-data-extension-parser';
-
-export interface ExtendedValidationRules extends ValidationRules {
-  // Geographic validation
-  latitude?: { min?: number; max?: number };
-  longitude?: { min?: number; max?: number };
-  
-  // Phone number validation
-  countryCode?: string;
-  phoneFormat?: 'international' | 'national' | 'e164';
-  
-  // Custom pattern matching
-  customPattern?: {
-    pattern: string;
-    flags?: string;
-    message?: string;
-  };
-  
-  // Data dependencies
-  dependsOn?: {
-    field: string;
-    value: unknown;
-    condition: 'equals' | 'not_equals' | 'greater' | 'less';
-  };
-}
-
-export class ExtendedValidationRuleProcessor {
-  validateExtendedRules(value: unknown, rules: ExtendedValidationRules): boolean {
-    // Validate geographic coordinates
-    if (rules.latitude || rules.longitude) {
-      if (!this.validateGeoRules(value, rules)) return false;
-    }
-    
-    // Validate phone number format
-    if (rules.phoneFormat || rules.countryCode) {
-      if (!this.validatePhoneRules(value, rules)) return false;
-    }
-    
-    // Validate custom patterns
-    if (rules.customPattern) {
-      if (!this.validateCustomPattern(value, rules.customPattern)) return false;
-    }
-    
-    return true;
-  }
-
-  private validateGeoRules(value: unknown, rules: ExtendedValidationRules): boolean {
-    if (typeof value !== 'string') return false;
-    
-    const [latStr, lngStr] = value.split(',');
-    const lat = parseFloat(latStr);
-    const lng = parseFloat(lngStr);
-    
-    if (rules.latitude) {
-      if (rules.latitude.min !== undefined && lat < rules.latitude.min) return false;
-      if (rules.latitude.max !== undefined && lat > rules.latitude.max) return false;
-    }
-    
-    if (rules.longitude) {
-      if (rules.longitude.min !== undefined && lng < rules.longitude.min) return false;
-      if (rules.longitude.max !== undefined && lng > rules.longitude.max) return false;
-    }
-    
-    return true;
-  }
-
-  private validatePhoneRules(value: unknown, rules: ExtendedValidationRules): boolean {
-    if (typeof value !== 'string') return false;
-    
-    // Validate country code
-    if (rules.countryCode && !value.startsWith(`+${rules.countryCode}`)) {
-      return false;
-    }
-    
-    // Validate phone format
-    if (rules.phoneFormat) {
-      return this.validatePhoneFormat(value, rules.phoneFormat);
-    }
-    
-    return true;
-  }
-
-  private validateCustomPattern(value: unknown, pattern: ExtendedValidationRules['customPattern']): boolean {
-    if (typeof value !== 'string' || !pattern) return false;
-    
-    const regex = new RegExp(pattern.pattern, pattern.flags);
-    return regex.test(value);
-  }
-
-  private validatePhoneFormat(phone: string, format: 'international' | 'national' | 'e164'): boolean {
-    switch (format) {
-      case 'international':
-        return /^\+\d{1,3}\s?\d{1,14}$/.test(phone);
-      case 'national':
-        return /^\d{3}-?\d{3}-?\d{4}$/.test(phone);
-      case 'e164':
-        return /^\+\d{1,15}$/.test(phone);
-      default:
-        return true;
-    }
-  }
-}
-```
-
 ## Plugin Development
 
 ### Plugin Interface
@@ -595,7 +412,6 @@ export interface ParserPlugin {
   
   // Component extensions
   customTokenizer?(): Tokenizer;
-  customValidators?(): CustomTypeValidator[];
   customFormatters?(): DataFormatter[];
   customParsers?(): typeof BaseParser[];
 }
@@ -621,13 +437,11 @@ export class PluginManager {
   
   getCustomComponents(): {
     tokenizers: Tokenizer[];
-    validators: CustomTypeValidator[];
     formatters: DataFormatter[];
     parsers: typeof BaseParser[];
   } {
     return {
       tokenizers: this.plugins.map(p => p.customTokenizer?.()).filter(Boolean),
-      validators: this.plugins.flatMap(p => p.customValidators?.() || []),
       formatters: this.plugins.map(p => p.customFormatters?.()).flat().filter(Boolean),
       parsers: this.plugins.flatMap(p => p.customParsers?.() || [])
     };
@@ -658,9 +472,6 @@ export const GeoPlugin: ParserPlugin = {
     return result;
   },
   
-  customValidators(): CustomTypeValidator[] {
-    return [new GeoCoordinateValidator()];
-  },
   
   customFormatters(): DataFormatter[] {
     return [new GeoCoordinateFormatter()];

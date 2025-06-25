@@ -10,7 +10,7 @@ export { SchemaParser, validateSchemaDefinition } from './parsers/schema.js';
 export { TableParser } from './parsers/table.js';
 export { FreeformParser } from './parsers/freeform.js';
 export { BaseParser } from './parsers/base.js';
-export { DataParser, validateDataEntries } from './parsers/data.js';
+export { DataParser } from './parsers/data.js';
 
 // Type exports
 export type {
@@ -25,7 +25,6 @@ export type {
   DataEntry,
   FieldDefinition,
   IndexDefinition,
-  ValidationRules,
   DualFormat,
   FormattedValue,
   SchemaCache as ISchemaCache,
@@ -47,7 +46,6 @@ export {
   isValidFieldName,
   parseDataType,
   parseFormat,
-  parseValidationRules,
   parseIndexDefinition,
   normalizeWhitespace,
   escapeRegExp,
