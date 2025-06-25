@@ -2,6 +2,7 @@
 export { MarkdownDataExtensionParser } from './parser.js';
 export { MarkdownDataFormatter } from './formatter.js';
 export { DataTypeConverter } from './data-types.js';
+export { DataValidator } from './validator.js';
 export { Tokenizer } from './tokenizer.js';
 export { SchemaParser, validateSchemaDefinition } from './schema-parser.js';
 export { DataParser, validateDataEntries } from './data-parser.js';
@@ -53,6 +54,7 @@ export {
 import { MarkdownDataExtensionParser } from './parser.js';
 import { MarkdownDataFormatter } from './formatter.js';
 import { DataTypeConverter } from './data-types.js';
+import { DataValidator } from './validator.js';
 
 // Convenience factory functions
 export function createParser() {
@@ -65,6 +67,10 @@ export function createFormatter() {
 
 export function createConverter() {
   return new DataTypeConverter();
+}
+
+export function createValidator() {
+  return new DataValidator();
 }
 
 // Default parser instance for simple usage

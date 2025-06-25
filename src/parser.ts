@@ -18,17 +18,20 @@ import { SchemaParser, validateSchemaDefinition } from './schema-parser.js';
 import { DataParser, validateDataEntries } from './data-parser.js';
 import { DataTypeConverter } from './data-types.js';
 import { MarkdownDataFormatter } from './formatter.js';
+import { DataValidator } from './validator.js';
 import { createDefaultParseOptions, SchemaCache } from './utils.js';
 
 export class MarkdownDataExtensionParser implements MarkdownDataParser {
   private schemaCache: SchemaCache;
   private dataTypeConverter: DataTypeConverter;
   private formatter: MarkdownDataFormatter;
+  private validator: DataValidator;
 
   constructor() {
     this.schemaCache = new SchemaCache();
     this.dataTypeConverter = new DataTypeConverter();
     this.formatter = new MarkdownDataFormatter();
+    this.validator = new DataValidator();
   }
 
   parse(markdown: string, options?: ParseOptions): ParseResult {
@@ -153,11 +156,11 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
           
           if (field.format) {
             // Validate specific format if field has one
-            isValid = this.formatter.validateFormat(value, field.format, field.type);
+            isValid = this.validator.validateFormat(value, field.format, field.type);
             validationMessage = `Field '${fieldName}' expects ${field.type} with format '${field.format}' but got '${value}'`;
           } else {
             // Validate basic type for fields without specific format
-            isValid = this.formatter.validateType(value, field.type);
+            isValid = this.validator.validateType(value, field.type);
             validationMessage = `Field '${fieldName}' expects ${field.type} but got '${value}'`;
           }
           
