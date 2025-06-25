@@ -6,7 +6,10 @@ export { DataValidator } from './validation/syntax.js';
 export { TypeValidator } from './validation/type.js';
 export { HeaderValidator } from './validation/headers.js';
 export { Tokenizer } from './tokenizer.js';
-export { SchemaParser, validateSchemaDefinition } from './schema-parser.js';
+export { SchemaParser, validateSchemaDefinition } from './parsers/schema.js';
+export { TableParser } from './parsers/table.js';
+export { FreeformParser } from './parsers/freeform.js';
+export { BaseParser } from './parsers/base.js';
 export { DataParser, validateDataEntries } from './data-parser.js';
 
 // Type exports

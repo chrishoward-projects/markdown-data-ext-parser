@@ -7,7 +7,7 @@ import {
   Token, 
   TokenType,
   DataType 
-} from './types.js';
+} from '../types.js';
 import { 
   isValidFieldName, 
   parseDataType, 
@@ -15,7 +15,7 @@ import {
   parseValidationRules, 
   parseIndexDefinition,
   formatErrorMessage 
-} from './utils.js';
+} from '../utils.js';
 
 export class SchemaParser {
   private tokens: Token[];
@@ -376,7 +376,7 @@ export function validateSchemaDefinition(schema: DataSchema): ParseError[] {
 function isValidDateFormat(format: string): boolean {
   // Basic validation for common date format patterns
   const datePatterns = [
-    /^[DMY\/\-\.\s]+$/,  // Basic date patterns with separators
+    /^[DMY/\-.s]+$/,  // Basic date patterns with separators
     /^[DMY]+$/,          // Date patterns without separators
     /^[DMY\s,]+$/        // Date patterns with month names
   ];
