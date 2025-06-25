@@ -5,11 +5,11 @@ import {
   ErrorType, 
   Token, 
   TokenType 
-} from './types.js';
-import { formatErrorMessage } from './utils.js';
-import { HeaderValidator } from './validation/headers.js';
-import { TableParser } from './parsers/table.js';
-import { FreeformParser } from './parsers/freeform.js';
+} from '../types.js';
+import { formatErrorMessage } from '../utils.js';
+import { HeaderValidator } from '../validation/headers.js';
+import { TableParser } from './table.js';
+import { FreeformParser } from './freeform.js';
 
 /**
  * Main data parser that orchestrates parsing by detecting format and delegating to specialized parsers

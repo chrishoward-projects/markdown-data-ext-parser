@@ -15,7 +15,7 @@ import {
 } from './types.js';
 import { Tokenizer } from './tokenizer.js';
 import { SchemaParser, validateSchemaDefinition } from './parsers/schema.js';
-import { DataParser, validateDataEntries } from './data-parser.js';
+import { DataParser, validateDataEntries } from './parsers/data.js';
 import { DataTypeConverter } from './data-types.js';
 import { DataValidator } from './validation/syntax.js';
 import { createDefaultParseOptions, SchemaCache } from './utils.js';
