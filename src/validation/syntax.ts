@@ -1,5 +1,5 @@
-import { DataType, FieldDefinition, DualFormat } from './types.js';
-import { TypeValidator } from './type-validator.js';
+import { DataType, FieldDefinition, DualFormat } from '../types.js';
+import { TypeValidator } from './type.js';
 
 /**
  * Dedicated validation module for data type and format validation

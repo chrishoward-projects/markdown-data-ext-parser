@@ -18,7 +18,7 @@ import { SchemaParser, validateSchemaDefinition } from './schema-parser.js';
 import { DataParser, validateDataEntries } from './data-parser.js';
 import { DataTypeConverter } from './data-types.js';
 import { MarkdownDataFormatter } from './formatter.js';
-import { DataValidator } from './validator.js';
+import { DataValidator } from './validation/syntax.js';
 import { createDefaultParseOptions, SchemaCache } from './utils.js';
 
 export class MarkdownDataExtensionParser implements MarkdownDataParser {
