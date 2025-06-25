@@ -90,6 +90,29 @@ export class MarkdownDataFormatter implements DataFormatter {
     }
   }
 
+  validateType(value: unknown, type: DataType): boolean {
+    if (value === null || value === undefined) {
+      return true;
+    }
+
+    const stringValue = String(value);
+
+    switch (type) {
+      case DataType.TEXT:
+        return true; // Text is always valid
+      case DataType.NUMBER:
+        return this.validateNumberFormat(stringValue, "");
+      case DataType.DATE:
+        return this.validateBasicDateFormat(stringValue);
+      case DataType.TIME:
+        return this.validateBasicTimeFormat(stringValue);
+      case DataType.BOOLEAN:
+        return this.validateBooleanFormat(stringValue, "");
+      default:
+        return true;
+    }
+  }
+
   private formatTextValue(value: unknown, field: FieldDefinition): string {
     const stringValue = String(value);
     
@@ -432,5 +455,30 @@ export class MarkdownDataFormatter implements DataFormatter {
   private validateBooleanFormat(value: string, _format: string | DualFormat): boolean {
     const normalized = value.toLowerCase().trim();
     return ['true', 'false', 'yes', 'no', 'y', 'n', '1', '0'].includes(normalized);
+  }
+
+  private validateBasicDateFormat(value: string): boolean {
+    // Support common date formats without specific format requirements
+    const datePatterns = [
+      /^\d{1,2}\/\d{1,2}\/\d{4}$/, // DD/MM/YYYY or MM/DD/YYYY
+      /^\d{4}-\d{1,2}-\d{1,2}$/, // YYYY-MM-DD
+      /^\d{1,2}-\d{1,2}-\d{4}$/, // DD-MM-YYYY or MM-DD-YYYY
+      /^\d{1,2}\.\d{1,2}\.\d{4}$/ // DD.MM.YYYY
+    ];
+    
+    const matchesPattern = datePatterns.some(pattern => pattern.test(value.trim()));
+    if (!matchesPattern) {
+      return false;
+    }
+    
+    // Try to parse as a date
+    const date = new Date(value);
+    return !isNaN(date.getTime());
+  }
+
+  private validateBasicTimeFormat(value: string): boolean {
+    // Check if the value matches time format: HH:MM or HH:MM:SS
+    const timePattern = /^([01]?\d|2[0-3]):([0-5]?\d)(?::([0-5]?\d))?$/;
+    return timePattern.test(value.trim());
   }
 }

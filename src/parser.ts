@@ -17,15 +17,18 @@ import { Tokenizer } from './tokenizer.js';
 import { SchemaParser, validateSchemaDefinition } from './schema-parser.js';
 import { DataParser, validateDataEntries } from './data-parser.js';
 import { DataTypeConverter } from './data-types.js';
+import { MarkdownDataFormatter } from './formatter.js';
 import { createDefaultParseOptions, SchemaCache } from './utils.js';
 
 export class MarkdownDataExtensionParser implements MarkdownDataParser {
   private schemaCache: SchemaCache;
   private dataTypeConverter: DataTypeConverter;
+  private formatter: MarkdownDataFormatter;
 
   constructor() {
     this.schemaCache = new SchemaCache();
     this.dataTypeConverter = new DataTypeConverter();
+    this.formatter = new MarkdownDataFormatter();
   }
 
   parse(markdown: string, options?: ParseOptions): ParseResult {
@@ -144,10 +147,24 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
         const field = schemaFields.get(fieldName);
         if (field) {
           // Validate type before conversion - add warning if type doesn't match
-          if (!this.dataTypeConverter.validateType(value, field)) {
+          // Use existing formatter validation infrastructure
+          let isValid = true;
+          let validationMessage = '';
+          
+          if (field.format) {
+            // Validate specific format if field has one
+            isValid = this.formatter.validateFormat(value, field.format, field.type);
+            validationMessage = `Field '${fieldName}' expects ${field.type} with format '${field.format}' but got '${value}'`;
+          } else {
+            // Validate basic type for fields without specific format
+            isValid = this.formatter.validateType(value, field.type);
+            validationMessage = `Field '${fieldName}' expects ${field.type} but got '${value}'`;
+          }
+          
+          if (!isValid) {
             warnings.push({
               type: 'TYPE_MISMATCH' as any,
-              message: `Field '${fieldName}' expects ${field.type} but got '${value}'`,
+              message: validationMessage,
               lineNumber: entry.lineNumber || 0,
               schemaName: schema.name,
               fieldName: fieldName
