@@ -34,9 +34,10 @@ def main():
     if port != requested_port:
         print(f"Port {requested_port} is in use, using port {port} instead")
     
-    # Change to the script's directory
+    # Change to the project root directory (parent of test folder)
     script_dir = Path(__file__).parent
-    os.chdir(script_dir)
+    project_root = script_dir.parent
+    os.chdir(project_root)
     
     Handler = http.server.SimpleHTTPRequestHandler
     
@@ -50,11 +51,11 @@ def main():
     
     with socketserver.TCPServer(("", port), CORSRequestHandler) as httpd:
         print(f"Serving at http://localhost:{port}/")
-        print(f"Open test page: http://localhost:{port}/test.html")
+        print(f"Open test page: http://localhost:{port}/test/test.html")
         
         # Auto-open browser
         try:
-            webbrowser.open(f'http://localhost:{port}/test.html')
+            webbrowser.open(f'http://localhost:{port}/test/test.html')
         except:
             pass
             

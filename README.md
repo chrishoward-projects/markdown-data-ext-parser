@@ -57,29 +57,29 @@ console.log('Errors:', result.errors.length);
 
 The library includes two test interfaces for different integration scenarios:
 
-#### 1. ES Module Test Interface (test.html)
+#### 1. ES Module Test Interface (test/test.html)
 Modern interface using ES modules (recommended for development):
 
 ```bash
 # Serve from HTTP server (required for ES modules)
-python serve.py
+python test/serve.py
 # or
 python -m http.server 8000
 ```
 
-Then open http://localhost:8000/test.html
+Then open http://localhost:8000/test/test.html
 
-#### 2. UMD Test Interface (test-umd.html)
+#### 2. UMD Test Interface (test/test-umd.html)
 Alternative interface using UMD build (works directly in browser):
 
 ```bash
 # Can open directly in browser (no server required)
-open test-umd.html
+open test/test-umd.html
 # or serve from HTTP server
-python serve.py
+python test/serve.py
 ```
 
-Then open http://localhost:8000/test-umd.html
+Then open http://localhost:8000/test/test-umd.html
 
 **Both interfaces feature:**
 - Two-panel layout with markdown input and JSON output
