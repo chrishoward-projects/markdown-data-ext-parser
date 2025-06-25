@@ -1,5 +1,5 @@
 import { promises as fs } from 'fs';
-import { resolve, dirname, join } from 'path';
+import { resolve, dirname } from 'path';
 import { 
   MarkdownDataParser, 
   ParseResult, 
@@ -17,20 +17,17 @@ import { Tokenizer } from './tokenizer.js';
 import { SchemaParser, validateSchemaDefinition } from './schema-parser.js';
 import { DataParser, validateDataEntries } from './data-parser.js';
 import { DataTypeConverter } from './data-types.js';
-import { MarkdownDataFormatter } from './formatter.js';
 import { DataValidator } from './validation/syntax.js';
 import { createDefaultParseOptions, SchemaCache } from './utils.js';
 
 export class MarkdownDataExtensionParser implements MarkdownDataParser {
   private schemaCache: SchemaCache;
   private dataTypeConverter: DataTypeConverter;
-  private formatter: MarkdownDataFormatter;
   private validator: DataValidator;
 
   constructor() {
     this.schemaCache = new SchemaCache();
     this.dataTypeConverter = new DataTypeConverter();
-    this.formatter = new MarkdownDataFormatter();
     this.validator = new DataValidator();
   }
 
@@ -260,8 +257,8 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
           currentBlock = null;
           currentTokens = [];
           state.inBlock = false;
-          state.currentBlockType = undefined;
-          state.currentSchemaName = undefined;
+          delete state.currentBlockType;
+          delete state.currentSchemaName;
         }
       } else if (state.inBlock) {
         currentTokens.push(token);
@@ -298,18 +295,23 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
 
     // Check for external reference [schema_name](path)
     const externalMatch = schemaName.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
-    if (externalMatch) {
+    if (externalMatch && externalMatch[1] && externalMatch[2]) {
       schemaName = externalMatch[1];
       externalPath = externalMatch[2];
     }
 
     if (blockType === 'datadef' || blockType === 'data') {
-      return {
+      const blockInfo: BlockInfo = {
         type: blockType as 'datadef' | 'data',
         schemaName,
-        externalPath,
         startLine: token.position.line
       };
+      
+      if (externalPath) {
+        blockInfo.externalPath = externalPath;
+      }
+      
+      return blockInfo;
     }
 
     return null;
@@ -337,7 +339,9 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
     const result = schemaParser.parseSchema(blockInfo.schemaName, blockInfo.startLine);
     
     if (result.schema) {
-      result.schema.sourcePath = state.options.sourceFile;
+      if (state.options.sourceFile) {
+        result.schema.sourcePath = state.options.sourceFile;
+      }
       state.schemas.set(blockInfo.schemaName, result.schema);
       this.schemaCache.set(blockInfo.schemaName, result.schema);
       
@@ -378,37 +382,6 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
     state.errors.push(...result.errors);
   }
 
-  private async loadExternalSchema(path: string, options: ParseOptions): Promise<DataSchema | null> {
-    try {
-      const cachedSchema = this.schemaCache.get(path);
-      if (cachedSchema) {
-        return cachedSchema;
-      }
-
-      const absolutePath = options.basePath ? resolve(options.basePath, path) : resolve(path);
-      const schemaMarkdown = await fs.readFile(absolutePath, 'utf-8');
-      
-      const schemaOptions: ParseOptions = {
-        ...options,
-        basePath: dirname(absolutePath),
-        sourceFile: absolutePath,
-        validateData: false // Only parse schema, not data
-      };
-
-      const result = this.parse(schemaMarkdown, schemaOptions);
-      
-      if (result.errors.length > 0) {
-        return null;
-      }
-
-      // Return the first schema found
-      const schemas = Array.from(result.schemas.values());
-      return schemas.length > 0 ? schemas[0] : null;
-      
-    } catch {
-      return null;
-    }
-  }
 
   private validateAllData(state: ParserState): void {
     for (const [schemaName, entries] of state.data) {

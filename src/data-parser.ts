@@ -7,6 +7,7 @@ import {
   TokenType 
 } from './types.js';
 import { formatErrorMessage } from './utils.js';
+import { HeaderValidator } from './validation/headers.js';
 
 export class DataParser {
   private tokens: Token[];
@@ -14,11 +15,13 @@ export class DataParser {
   private errors: ParseError[] = [];
   private schema: DataSchema;
   private schemaName: string;
+  private headerValidator: HeaderValidator;
 
   constructor(tokens: Token[], schema: DataSchema, schemaName: string) {
     this.tokens = tokens;
     this.schema = schema;
     this.schemaName = schemaName;
+    this.headerValidator = new HeaderValidator();
   }
 
   parseData(): { data: DataEntry[]; errors: ParseError[] } {
@@ -99,8 +102,9 @@ export class DataParser {
       const token = this.advance();
       
       if (token.type === TokenType.TABLE_HEADER) {
-        const headerResult = this.parseTableHeader(token.value);
+        const headerResult = this.headerValidator.parseTableHeader(token.value, token.position.line);
         headers = headerResult.headers;
+        this.errors.push(...headerResult.errors);
         headerLineNumber = token.position.line;
         break;
       } else if (token.type !== TokenType.NEWLINE && token.type !== TokenType.COMMENT) {
@@ -119,7 +123,8 @@ export class DataParser {
     }
 
     // Validate headers against schema
-    this.validateHeaders(headers, headerLineNumber);
+    const headerValidationErrors = this.headerValidator.validateHeaders(headers, this.schema, this.schemaName, headerLineNumber);
+    this.errors.push(...headerValidationErrors);
 
     // Skip separator row (|---|---|---|)
     this.skipSeparatorRow();
@@ -145,44 +150,6 @@ export class DataParser {
     return entries;
   }
 
-  private parseTableHeader(headerLine: string): { headers: string[] } {
-    const headers: string[] = [];
-    
-    // Validate basic table syntax
-    if (!headerLine.startsWith('|') || !headerLine.endsWith('|')) {
-      this.addError(ErrorType.INVALID_TABLE_SYNTAX, this.getCurrentLine(), {
-        message: 'Table header must start and end with pipe (|) character'
-      });
-    }
-    
-    // Parse markdown table header: | !field1 | !field2 | field3 |
-    const cells = headerLine.split('|').map(cell => cell.trim()).filter(cell => cell.length > 0);
-    
-    if (cells.length === 0) {
-      this.addError(ErrorType.INVALID_TABLE_SYNTAX, this.getCurrentLine(), {
-        message: 'Table header contains no field definitions'
-      });
-      return { headers };
-    }
-    
-    for (const cell of cells) {
-      if (cell.startsWith('!')) {
-        const fieldName = cell.substring(1);
-        if (!fieldName) {
-          this.addError(ErrorType.INVALID_TABLE_SYNTAX, this.getCurrentLine(), {
-            message: 'Empty field name in table header (! with no field name)'
-          });
-          continue;
-        }
-        headers.push(fieldName);
-      } else if (cell.length > 0) {
-        // Regular field name without ! prefix - warn but allow
-        headers.push(cell);
-      }
-    }
-    
-    return { headers };
-  }
 
   private parseTableRow(rowLine: string, headers: string[], lineNumber: number, recordIndex: number): DataEntry | null {
     // Validate basic table syntax
@@ -328,19 +295,6 @@ export class DataParser {
     return { name, value };
   }
 
-  private validateHeaders(headers: string[], lineNumber: number): void {
-    const schemaFieldNames = new Set(this.schema.fields.map(f => f.name));
-    
-    for (const header of headers) {
-      if (!schemaFieldNames.has(header)) {
-        this.addError(ErrorType.INVALID_FIELD_NAME, lineNumber, {
-          fieldName: header,
-          schemaName: this.schemaName,
-          message: `Header '${header}' does not match any field in schema '${this.schemaName}'`
-        });
-      }
-    }
-  }
 
   private isAtEnd(): boolean {
     return this.current >= this.tokens.length || this.peek().type === TokenType.EOF;
@@ -385,36 +339,7 @@ export class DataParser {
 }
 
 export function validateDataEntries(entries: DataEntry[], schema: DataSchema): ParseError[] {
-  const errors: ParseError[] = [];
-  const schemaFields = new Map(schema.fields.map(f => [f.name, f]));
-  
-  for (const entry of entries) {
-    // Check for unknown fields
-    for (const [fieldName] of entry.fields) {
-      if (!schemaFields.has(fieldName)) {
-        errors.push({
-          type: ErrorType.INVALID_FIELD_NAME,
-          message: `Unknown field '${fieldName}' in data entry`,
-          fieldName: fieldName,
-          schemaName: entry.schemaName,
-          lineNumber: entry.lineNumber
-        });
-      }
-    }
-    
-    // Check for required fields
-    for (const field of schema.fields) {
-      if (field.required && !entry.fields.has(field.name)) {
-        errors.push({
-          type: ErrorType.MISSING_REQUIRED_FIELD,
-          message: `Required field '${field.name}' is missing`,
-          fieldName: field.name,
-          schemaName: entry.schemaName,
-          lineNumber: entry.lineNumber
-        });
-      }
-    }
-  }
-  
-  return errors;
+  // Use HeaderValidator for consistent validation logic
+  const headerValidator = new HeaderValidator();
+  return headerValidator.validateDataEntries(entries, schema);
 }

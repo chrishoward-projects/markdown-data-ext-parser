@@ -76,8 +76,8 @@ export class TypeValidator {
     // Support many common date formats
     const datePatterns = [
       // Numeric formats with separators
-      /^\d{1,2}[/-.]\d{1,2}[/-.]\d{2,4}$/, // DD/MM/YYYY, MM/DD/YY, etc.
-      /^\d{4}[/-.]\d{1,2}[/-.]\d{1,2}$/, // YYYY/MM/DD, YYYY-MM-DD, etc.
+      /^\d{1,2}[/\-.]\d{1,2}[/\-.]\d{2,4}$/, // DD/MM/YYYY, MM/DD/YY, etc.
+      /^\d{4}[/\-.]\d{1,2}[/\-.]\d{1,2}$/, // YYYY/MM/DD, YYYY-MM-DD, etc.
       
       // Text month formats
       /^\d{1,2}\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{2,4}$/i, // DD MMM YYYY
@@ -116,7 +116,7 @@ export class TypeValidator {
     
     // Strategy 2: Try parsing common numeric formats manually
     // Handle DD/MM/YYYY vs MM/DD/YYYY ambiguity by checking if day > 12
-    const numericMatch = dateStr.match(/^(\d{1,2})[/-.]( \d{1,2})[/-.] (\d{2,4})$/);
+    const numericMatch = dateStr.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{2,4})$/);
     if (numericMatch) {
       const [, part1, part2, year] = numericMatch;
       const num1 = parseInt(part1);
@@ -138,7 +138,7 @@ export class TypeValidator {
     }
     
     // Strategy 3: Try YYYY/MM/DD format
-    const isoMatch = dateStr.match(/^(\d{4})[/-.]( \d{1,2})[/-.] (\d{1,2})$/);
+    const isoMatch = dateStr.match(/^(\d{4})[/\-.](\d{1,2})[/\-.](\d{1,2})$/);
     if (isoMatch) {
       const [, year, month, day] = isoMatch;
       const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
