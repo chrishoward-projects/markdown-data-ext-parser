@@ -91,9 +91,18 @@ export class TableParser extends BaseParser {
     }
 
     // Parse markdown table row: | value1 | value2 | value3 |
-    const cells = rowLine.split('|').map(cell => cell.trim()).filter(cell => cell.length > 0);
+    // Split by pipe and trim, but preserve empty cells (don't filter them out)
+    const allCells = rowLine.split('|').map(cell => cell.trim());
+    // Remove the first and last empty cells (from leading/trailing pipes)
+    let cells = allCells.slice(1, -1);
     
-    if (cells.length !== headers.length) {
+    // Handle missing trailing cells by padding with empty strings
+    // This is common in markdown tables where trailing empty cells are omitted
+    while (cells.length < headers.length) {
+      cells.push('');
+    }
+    
+    if (cells.length > headers.length) {
       this.addError(ErrorType.INVALID_TABLE_SYNTAX, lineNumber, {
         message: `Table row has ${cells.length} columns but header has ${headers.length} columns`
       });
