@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.3] - 2025-06-26
+
+### Added
+- **Block context in error reporting** - Enhanced error and warning messages to include block number and context information (e.g., "Block: 1 datadef contacts", "Block: 3 data products"). This makes it significantly easier for users to identify which specific block in their markdown document contains errors or warnings.
+
+### Technical
+- **Extended ParseError and ParseWarning interfaces** - Added blockNumber, blockType, and blockContext optional fields to provide comprehensive error context
+- **Enhanced ParserState tracking** - Added block counter and current block context tracking throughout the parsing process
+- **Improved error propagation** - All error and warning creation points now include block context information when available
+- **Enhanced error formatting** - Updated formatErrorMessage function to display block context prefixes in error messages
+
 ## [0.2.2] - 2025-06-26
 
 ### Fixed
