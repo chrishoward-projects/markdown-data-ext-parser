@@ -21,14 +21,16 @@ export class SchemaParser {
   private tokens: Token[];
   private current: number = 0;
   private errors: ParseError[] = [];
+  private warnings: ParseError[] = [];
 
   constructor(tokens: Token[]) {
     this.tokens = tokens;
   }
 
-  parseSchema(schemaName: string, startLine: number): { schema: DataSchema | null; errors: ParseError[] } {
+  parseSchema(schemaName: string, startLine: number): { schema: DataSchema | null; errors: ParseError[]; warnings: ParseError[] } {
     this.current = 0;
     this.errors = [];
+    this.warnings = [];
 
     const schema: DataSchema = {
       name: schemaName,
@@ -72,7 +74,8 @@ export class SchemaParser {
 
     return {
       schema: this.errors.length === 0 ? schema : null,
-      errors: this.errors
+      errors: this.errors,
+      warnings: this.warnings
     };
   }
 
@@ -97,10 +100,10 @@ export class SchemaParser {
 
     // Validate data type if specified
     if (parts.typeString && !this.isValidDataType(parts.typeString)) {
-      this.addError(ErrorType.INVALID_DATA_TYPE, token.position.line, {
+      this.addWarning(ErrorType.INVALID_DATA_TYPE, token.position.line, {
         fieldName: parts.name,
         actual: parts.typeString,
-        message: `Invalid data type "${parts.typeString}" for field "${parts.name}"`
+        message: `Invalid data type "${parts.typeString}" for field "${parts.name}" - defaulting to text`
       });
     }
 
@@ -288,6 +291,20 @@ export class SchemaParser {
     this.errors.push({
       type,
       message: formatErrorMessage(type, details),
+      lineNumber,
+      fieldName: details.fieldName,
+      schemaName: details.schemaName
+    });
+  }
+
+  private addWarning(
+    type: ErrorType, 
+    lineNumber: number, 
+    details: { message?: string; fieldName?: string; schemaName?: string }
+  ): void {
+    this.warnings.push({
+      type,
+      message: details.message || formatErrorMessage(type, details),
       lineNumber,
       fieldName: details.fieldName,
       schemaName: details.schemaName

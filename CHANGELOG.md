@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2025-06-26
+
+### Fixed
+- **Invalid data type handling** - Changed invalid data types from critical errors to warnings. Parser now continues successfully when encountering unknown field types, defaulting to text type and generating appropriate warnings instead of breaking the entire parsing process.
+
+### Technical
+- **Enhanced error handling** - Added separate warning collection system to SchemaParser alongside existing error handling
+- **Graceful degradation** - Parser now implements fault tolerance for invalid data types while maintaining strict validation for critical syntax errors
+- **Improved user experience** - Applications can now handle invalid data types gracefully without losing entire parsing results
+
 ## [0.2.1] - 2025-06-26
 
 ### Fixed

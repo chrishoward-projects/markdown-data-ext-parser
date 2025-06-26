@@ -326,6 +326,7 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
     }
     
     state.errors.push(...result.errors);
+    state.warnings.push(...result.warnings);
   }
 
   private processDataEntry(blockInfo: BlockInfo, tokens: Token[], state: ParserState): void {
