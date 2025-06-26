@@ -22,15 +22,21 @@ export class SchemaParser {
   private current: number = 0;
   private errors: ParseError[] = [];
   private warnings: ParseError[] = [];
+  private blockContext?: { blockNumber?: number; blockType?: 'datadef' | 'data'; blockContext?: string };
 
   constructor(tokens: Token[]) {
     this.tokens = tokens;
   }
 
-  parseSchema(schemaName: string, startLine: number): { schema: DataSchema | null; errors: ParseError[]; warnings: ParseError[] } {
+  parseSchema(
+    schemaName: string, 
+    startLine: number, 
+    blockContext?: { blockNumber?: number; blockType?: 'datadef' | 'data'; blockContext?: string }
+  ): { schema: DataSchema | null; errors: ParseError[]; warnings: ParseError[] } {
     this.current = 0;
     this.errors = [];
     this.warnings = [];
+    this.blockContext = blockContext;
 
     const schema: DataSchema = {
       name: schemaName,
@@ -51,7 +57,7 @@ export class SchemaParser {
             this.addError(ErrorType.DUPLICATE_FIELD, token.position.line, {
               fieldName: field.name,
               schemaName: schemaName
-            });
+            }, this.blockContext);
           } else {
             fieldNames.add(field.name);
             schema.fields.push(field);
@@ -68,7 +74,7 @@ export class SchemaParser {
       } else if (token.type !== TokenType.NEWLINE) {
         this.addError(ErrorType.SYNTAX_ERROR, token.position.line, {
           message: `Unexpected token in schema definition: ${token.value}`
-        });
+        }, this.blockContext);
       }
     }
 
@@ -86,7 +92,7 @@ export class SchemaParser {
     if (!parts.name) {
       this.addError(ErrorType.MISSING_FIELD_ATTRIBUTE, token.position.line, {
         message: 'Field name is required in field definition'
-      });
+      }, this.blockContext);
       return null;
     }
 
@@ -94,7 +100,7 @@ export class SchemaParser {
       this.addError(ErrorType.INVALID_FIELD_NAME, token.position.line, {
         fieldName: parts.name,
         message: 'Field name must start with a letter and contain only letters, numbers, and underscores'
-      });
+      }, this.blockContext);
       return null;
     }
 
@@ -104,7 +110,7 @@ export class SchemaParser {
         fieldName: parts.name,
         actual: parts.typeString,
         message: `Invalid data type "${parts.typeString}" for field "${parts.name}" - defaulting to text`
-      });
+      }, this.blockContext);
     }
 
     const field: FieldDefinition = {
@@ -143,7 +149,7 @@ export class SchemaParser {
       if (colonIndex === -1) {
         this.addError(ErrorType.MALFORMED_FIELD_ATTRIBUTE, lineNumber, {
           message: `Invalid field attribute syntax "${component}" - expected "key: value" format`
-        });
+        }, this.blockContext);
         continue;
       }
 
@@ -153,7 +159,7 @@ export class SchemaParser {
       if (!value) {
         this.addError(ErrorType.MISSING_FIELD_ATTRIBUTE, lineNumber, {
           message: `Missing value for field attribute "${key}"`
-        });
+        }, this.blockContext);
         continue;
       }
 
@@ -162,7 +168,7 @@ export class SchemaParser {
       if (!validKeys.includes(key)) {
         this.addError(ErrorType.MALFORMED_FIELD_ATTRIBUTE, lineNumber, {
           message: `Unknown field attribute "${key}" - valid attributes: ${validKeys.join(', ')}`
-        });
+        }, this.blockContext);
       }
 
       // Handle multi-component values (like validation rules and dual formats)
@@ -181,7 +187,7 @@ export class SchemaParser {
         if (!foundClose) {
           this.addError(ErrorType.UNCLOSED_LITERAL, lineNumber, {
             message: `Unclosed brace in "${key}" attribute`
-          });
+          }, this.blockContext);
         }
       }
 
@@ -209,7 +215,7 @@ export class SchemaParser {
       } catch (error) {
         this.addError(ErrorType.MALFORMED_DUAL_FORMAT, lineNumber, {
           message: `Invalid format syntax: ${error instanceof Error ? error.message : 'Unknown error'}`
-        });
+        }, this.blockContext);
       }
     }
 
@@ -219,7 +225,7 @@ export class SchemaParser {
       if (parts.required.toLowerCase() !== 'true' && parts.required.toLowerCase() !== 'false') {
         this.addError(ErrorType.MALFORMED_FIELD_ATTRIBUTE, lineNumber, {
           message: `Invalid required value "${parts.required}" - must be "true" or "false"`
-        });
+        }, this.blockContext);
       }
       result.required = parts.required.toLowerCase() === 'true';
     }
@@ -239,7 +245,7 @@ export class SchemaParser {
     if (fields.length === 0) {
       this.addError(ErrorType.MALFORMED_FIELD_ATTRIBUTE, token.position.line, {
         message: 'Index definition must specify at least one field'
-      });
+      }, this.blockContext);
       return null;
     }
 
@@ -249,7 +255,7 @@ export class SchemaParser {
         this.addError(ErrorType.INVALID_INDEX_REFERENCE, token.position.line, {
           fieldName: fieldName,
           message: `Index references unknown field: ${fieldName}`
-        });
+        }, this.blockContext);
         return null;
       }
     }
@@ -286,28 +292,36 @@ export class SchemaParser {
   private addError(
     type: ErrorType, 
     lineNumber: number, 
-    details: { message?: string; fieldName?: string; schemaName?: string }
+    details: { message?: string; fieldName?: string; schemaName?: string },
+    blockContext?: { blockNumber?: number; blockType?: 'datadef' | 'data'; blockContext?: string }
   ): void {
     this.errors.push({
       type,
-      message: formatErrorMessage(type, details),
+      message: details.message || formatErrorMessage(type, { ...details, blockContext: blockContext?.blockContext }),
       lineNumber,
       fieldName: details.fieldName,
-      schemaName: details.schemaName
+      schemaName: details.schemaName,
+      blockNumber: blockContext?.blockNumber,
+      blockType: blockContext?.blockType,
+      blockContext: blockContext?.blockContext
     });
   }
 
   private addWarning(
     type: ErrorType, 
     lineNumber: number, 
-    details: { message?: string; fieldName?: string; schemaName?: string }
+    details: { message?: string; fieldName?: string; schemaName?: string },
+    blockContext?: { blockNumber?: number; blockType?: 'datadef' | 'data'; blockContext?: string }
   ): void {
     this.warnings.push({
       type,
-      message: details.message || formatErrorMessage(type, details),
+      message: details.message || formatErrorMessage(type, { ...details, blockContext: blockContext?.blockContext }),
       lineNumber,
       fieldName: details.fieldName,
-      schemaName: details.schemaName
+      schemaName: details.schemaName,
+      blockNumber: blockContext?.blockNumber,
+      blockType: blockContext?.blockType,
+      blockContext: blockContext?.blockContext
     });
   }
 }

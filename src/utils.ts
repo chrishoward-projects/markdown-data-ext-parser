@@ -96,70 +96,73 @@ export function formatErrorMessage(
     schemaName?: string;
     expected?: string;
     actual?: string;
+    blockContext?: string;
   }
 ): string {
-  const { message, fieldName, schemaName, expected, actual } = details;
+  const { message, fieldName, schemaName, expected, actual, blockContext } = details;
   
   if (message) {
-    return message;
+    return blockContext ? `[Block ${blockContext}] ${message}` : message;
   }
+  
+  const blockPrefix = blockContext ? `[Block ${blockContext}] ` : '';
   
   switch (type) {
     case 'syntax_error':
-      return 'Invalid syntax in Markdown Data Extension block';
+      return `${blockPrefix}Invalid syntax in Markdown Data Extension block`;
     case 'schema_not_found':
-      return `Schema '${schemaName || 'unknown'}' not found`;
+      return `${blockPrefix}Schema '${schemaName || 'unknown'}' not found`;
     case 'invalid_field_name':
-      return `Invalid field name '${fieldName || 'unknown'}'`;
+      return `${blockPrefix}Invalid field name '${fieldName || 'unknown'}'`;
     case 'type_mismatch':
-      return `Type mismatch for field '${fieldName || 'unknown'}': expected ${expected || 'unknown'}, got ${actual || 'unknown'}`;
+      return `${blockPrefix}Type mismatch for field '${fieldName || 'unknown'}': expected ${expected || 'unknown'}, got ${actual || 'unknown'}`;
     case 'validation_failed':
-      return `Validation failed for field '${fieldName || 'unknown'}'`;
+      return `${blockPrefix}Validation failed for field '${fieldName || 'unknown'}'`;
     case 'external_reference_failed':
-      return `Failed to load external schema reference`;
+      return `${blockPrefix}Failed to load external schema reference`;
     case 'block_not_closed':
-      return 'Data block not properly closed with !#';
+      return `${blockPrefix}Data block not properly closed with !#`;
     case 'invalid_block_type':
-      return 'Invalid block type, expected "datadef" or "data"';
+      return `${blockPrefix}Invalid block type, expected "datadef" or "data"`;
     case 'duplicate_field':
-      return `Duplicate field '${fieldName || 'unknown'}' in schema '${schemaName || 'unknown'}'`;
+      return `${blockPrefix}Duplicate field '${fieldName || 'unknown'}' in schema '${schemaName || 'unknown'}'`;
     case 'missing_required_field':
-      return `Missing required field '${fieldName || 'unknown'}'`;
+      return `${blockPrefix}Missing required field '${fieldName || 'unknown'}'`;
     case 'missing_block_start':
-      return 'Data content found without proper block declaration (!? datadef/data)';
+      return `${blockPrefix}Data content found without proper block declaration (!? datadef/data)`;
     case 'invalid_block_syntax':
-      return 'Invalid block syntax - expected "!? datadef schema_name" or "!? data schema_name"';
+      return `${blockPrefix}Invalid block syntax - expected "!? datadef schema_name" or "!? data schema_name"`;
     case 'nested_blocks':
-      return 'Nested blocks are not allowed - close current block with !# before starting new one';
+      return `${blockPrefix}Nested blocks are not allowed - close current block with !# before starting new one`;
     case 'empty_block':
-      return 'Empty block - blocks must contain field definitions or data entries';
+      return `${blockPrefix}Empty block - blocks must contain field definitions or data entries`;
     case 'invalid_schema_name':
-      return `Invalid schema name '${details.schemaName || 'unknown'}' - must start with letter and contain only letters, numbers, underscores`;
+      return `${blockPrefix}Invalid schema name '${details.schemaName || 'unknown'}' - must start with letter and contain only letters, numbers, underscores`;
     case 'missing_field_attribute':
-      return `Missing required field attribute in field definition`;
+      return `${blockPrefix}Missing required field attribute in field definition`;
     case 'invalid_data_type':
-      return `Invalid data type '${actual || 'unknown'}' - supported types: text, number, date, time, boolean`;
+      return `${blockPrefix}Invalid data type '${actual || 'unknown'}' - supported types: text, number, date, time, boolean`;
     case 'malformed_field_attribute':
-      return `Malformed field attribute syntax in field '${fieldName || 'unknown'}'`;
+      return `${blockPrefix}Malformed field attribute syntax in field '${fieldName || 'unknown'}'`;
     case 'invalid_index_reference':
-      return `Index references non-existent field '${fieldName || 'unknown'}'`;
+      return `${blockPrefix}Index references non-existent field '${fieldName || 'unknown'}'`;
     case 'mixed_data_format':
-      return 'Mixed data formats not allowed - use either tabular (|) or free-form (!field) format within a single data block';
+      return `${blockPrefix}Mixed data formats not allowed - use either tabular (|) or free-form (!field) format within a single data block`;
     case 'invalid_table_syntax':
-      return 'Invalid table syntax - check headers, separators, and column alignment';
+      return `${blockPrefix}Invalid table syntax - check headers, separators, and column alignment`;
     case 'invalid_freeform_syntax':
-      return 'Invalid free-form syntax - use "!field_name value" format';
+      return `${blockPrefix}Invalid free-form syntax - use "!field_name value" format`;
     case 'unclosed_literal':
-      return 'Unclosed literal - missing closing quote, brace, or bracket';
+      return `${blockPrefix}Unclosed literal - missing closing quote, brace, or bracket`;
     case 'invalid_character':
-      return 'Invalid character in field name or schema name';
+      return `${blockPrefix}Invalid character in field name or schema name`;
     case 'malformed_dual_format':
-      return 'Malformed dual format - expected {"input_format", "display_format"}';
+      return `${blockPrefix}Malformed dual format - expected {"input_format", "display_format"}`;
     case 'malformed_validation_rules':
-      return 'Malformed validation rules - expected {key: value, ...} format';
+      return `${blockPrefix}Malformed validation rules - expected {key: value, ...} format`;
     case 'malformed_external_reference':
-      return 'Malformed external reference - expected [schema_name](path) format';
+      return `${blockPrefix}Malformed external reference - expected [schema_name](path) format`;
     default:
-      return 'Unknown parser error';
+      return `${blockPrefix}Unknown parser error`;
   }
 }

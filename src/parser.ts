@@ -17,7 +17,7 @@ import { Tokenizer } from './tokenizer.js';
 import { SchemaParser, validateSchemaDefinition } from './parsers/schema.js';
 import { DataParser } from './parsers/data.js';
 import { DataTypeConverter } from './data-types.js';
-import { createDefaultParseOptions, SchemaCache } from './utils.js';
+import { createDefaultParseOptions, SchemaCache, formatErrorMessage } from './utils.js';
 
 export class MarkdownDataExtensionParser implements MarkdownDataParser {
   private schemaCache: SchemaCache;
@@ -39,6 +39,7 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
       currentLine: 1,
       currentColumn: 1,
       inBlock: false,
+      blockCounter: 0,
       schemas: new Map(),
       data: new Map(),
       errors: [],
@@ -61,7 +62,7 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
       // This parser focuses on structure and type conversion only
 
     } catch (error) {
-      state.errors.push({
+      this.addErrorWithContext(state, {
         type: ErrorType.SYNTAX_ERROR,
         message: `Parser error: ${error instanceof Error ? error.message : 'Unknown error'}`,
         lineNumber: state.currentLine
@@ -171,6 +172,37 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
     this.schemaCache.clear();
   }
 
+  private addErrorWithContext(
+    state: ParserState, 
+    error: Omit<ParseError, 'blockNumber' | 'blockType' | 'blockContext'>
+  ): void {
+    const errorWithContext: ParseError = {
+      ...error,
+      message: error.message || formatErrorMessage(error.type, { 
+        fieldName: error.fieldName, 
+        schemaName: error.schemaName, 
+        blockContext: state.currentBlockContext 
+      }),
+      blockNumber: state.currentBlockNumber,
+      blockType: state.currentBlockType,
+      blockContext: state.currentBlockContext
+    };
+    state.errors.push(errorWithContext);
+  }
+
+  private addWarningWithContext(
+    state: ParserState, 
+    warning: Omit<ParseWarning, 'blockNumber' | 'blockType' | 'blockContext'>
+  ): void {
+    const warningWithContext: ParseWarning = {
+      ...warning,
+      blockNumber: state.currentBlockNumber,
+      blockType: state.currentBlockType,
+      blockContext: state.currentBlockContext
+    };
+    state.warnings.push(warningWithContext);
+  }
+
   private parseBlocks(tokens: Token[], state: ParserState): void {
     let currentTokens: Token[] = [];
     let currentBlock: BlockInfo | null = null;
@@ -184,7 +216,7 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
       if (token.type === TokenType.BLOCK_START) {
         // Check for nested blocks
         if (state.inBlock && currentBlock) {
-          state.errors.push({
+          this.addErrorWithContext(state, {
             type: ErrorType.NESTED_BLOCKS,
             message: `Cannot start new block '${token.value}' - block '${currentBlock.type} ${currentBlock.schemaName}' is still open`,
             lineNumber: token.position.line,
@@ -200,10 +232,13 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
           state.inBlock = true;
           state.currentBlockType = blockInfo.type;
           state.currentSchemaName = blockInfo.schemaName;
+          state.blockCounter++;
+          state.currentBlockNumber = state.blockCounter;
+          state.currentBlockContext = `${state.blockCounter} ${blockInfo.type} ${blockInfo.schemaName}`;
         }
       } else if (token.type === TokenType.BLOCK_END) {
         if (!state.inBlock || !currentBlock) {
-          state.errors.push({
+          this.addErrorWithContext(state, {
             type: ErrorType.SYNTAX_ERROR,
             message: 'Block end (!#) found without matching block start (!?)',
             lineNumber: token.position.line
@@ -222,7 +257,7 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
           );
           
           if (contentTokens.length === 0) {
-            state.errors.push({
+            this.addErrorWithContext(state, {
               type: ErrorType.EMPTY_BLOCK,
               message: `Empty ${currentBlock.type} block for schema '${currentBlock.schemaName}'`,
               lineNumber: currentBlock.startLine,
@@ -236,13 +271,15 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
           state.inBlock = false;
           delete state.currentBlockType;
           delete state.currentSchemaName;
+          delete state.currentBlockNumber;
+          delete state.currentBlockContext;
         }
       } else if (state.inBlock) {
         currentTokens.push(token);
       } else {
         // Check for data content outside blocks
         if (this.isDataContent(token)) {
-          state.errors.push({
+          this.addErrorWithContext(state, {
             type: ErrorType.MISSING_BLOCK_START,
             message: 'Data content found without proper block declaration (!? datadef/data)',
             lineNumber: token.position.line
@@ -253,7 +290,7 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
 
     // Handle unclosed block
     if (state.inBlock && currentBlock) {
-      state.errors.push({
+      this.addErrorWithContext(state, {
         type: ErrorType.BLOCK_NOT_CLOSED,
         message: `Block '${currentBlock.type} ${currentBlock.schemaName}' not properly closed`,
         lineNumber: currentBlock.startLine,
@@ -313,7 +350,12 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
 
   private processSchemaDefinition(blockInfo: BlockInfo, tokens: Token[], state: ParserState): void {
     const schemaParser = new SchemaParser(tokens);
-    const result = schemaParser.parseSchema(blockInfo.schemaName, blockInfo.startLine);
+    const blockContext = {
+      blockNumber: state.currentBlockNumber,
+      blockType: state.currentBlockType,
+      blockContext: state.currentBlockContext
+    };
+    const result = schemaParser.parseSchema(blockInfo.schemaName, blockInfo.startLine, blockContext);
     
     if (result.schema) {
       if (state.options.sourceFile) {
@@ -334,7 +376,7 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
     
     // Check for external schema reference but don't load synchronously
     if (!schema && blockInfo.externalPath && state.options.loadExternalSchemas) {
-      state.warnings.push({
+      this.addWarningWithContext(state, {
         message: `External schema reference '${blockInfo.externalPath}' - external loading not supported in synchronous parsing`,
         lineNumber: blockInfo.startLine,
         schemaName: blockInfo.schemaName
@@ -342,7 +384,7 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
     }
     
     if (!schema) {
-      state.errors.push({
+      this.addErrorWithContext(state, {
         type: ErrorType.SCHEMA_NOT_FOUND,
         message: `Schema '${blockInfo.schemaName}' not found`,
         lineNumber: blockInfo.startLine,
