@@ -1,4 +1,4 @@
-import { MarkdownDataExtensionParser } from './dist/index.mjs';
+import { MarkdownDataExtensionParser } from '../dist/index.mjs';
 
 const parser = new MarkdownDataExtensionParser();
 

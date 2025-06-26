@@ -1,4 +1,4 @@
-const { MarkdownDataExtensionParser } = require('./dist/index.js');
+const { MarkdownDataExtensionParser } = require('../dist/index.js');
 
 // Create parser instance
 const parser = new MarkdownDataExtensionParser();

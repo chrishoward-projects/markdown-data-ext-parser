@@ -10,7 +10,7 @@
     <script type="module">
         try {
             console.log('Loading parser...');
-            const { MarkdownDataExtensionParser } = await import('./dist/index.mjs');
+            const { MarkdownDataExtensionParser } = await import('../dist/index.mjs');
             
             console.log('Parser loaded, creating instance...');
             const parser = new MarkdownDataExtensionParser();
