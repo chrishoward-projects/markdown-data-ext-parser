@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2025-06-26
+
+### Fixed
+- **Table parser empty cell handling** - Fixed incorrect "column count mismatch" errors when tables have empty trailing cells. Parser now properly pads missing trailing cells with empty strings and converts empty cells to null values, resolving false validation errors.
+
+### Added
+- **Freeform example with Load button** - Added comprehensive product catalog example showcasing freeform data format with "Load Freeform Example" button alongside existing "Load Tabular Example" button in both test interfaces
+- **Improved example organization** - Grouped related fields on same lines in freeform examples (stock status + quantity, weight + dimensions) for better readability and demonstration of multi-field line syntax
+
+### Changed
+- **Project organization improvements** - Moved debug, example, and test files to organized subdirectories (`debug/`, `examples/`, `test/`) for cleaner root directory structure
+- **Updated import paths** - Fixed all script and import references to use correct `../dist/` paths after file reorganization
+- **Enhanced test interface** - Updated both test.html and test-umd.html with dual example buttons and improved organization
+
+### Technical
+- **Import path consistency** - Ensured all moved files reference correct relative paths to dist folder
+- **Development workflow** - Updated serve.py to work correctly with new directory structure
+- **File organization** - Maintained functionality while improving project structure and discoverability
+
 ## [0.2.0] - 2025-06-25
 
 ### BREAKING CHANGES
