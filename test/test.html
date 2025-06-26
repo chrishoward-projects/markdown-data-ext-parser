@@ -228,7 +228,8 @@
             <div class="panel-header">
                 <h2>Markdown Input</h2>
                 <div class="controls">
-                    <button onclick="loadDefaultExample()">Load Example</button>
+                    <button onclick="loadDefaultExample()">Load Tabular Example</button>
+                    <button onclick="loadFreeformExample()">Load Freeform Example</button>
                     <button onclick="clearInput()" class="secondary">Clear</button>
                 </div>
             </div>
@@ -364,6 +365,145 @@ Our current team members:
 *This data is managed using the Markdown Data Extension format for maximum readability and version control compatibility.*`;
 
             document.getElementById('markdownInput').value = defaultMarkdown;
+            parseMarkdown();
+        };
+
+        window.loadFreeformExample = function() {
+            const freeformMarkdown = `# Product Catalog System
+
+This document demonstrates the Markdown Data Extension using free-form format for flexible data entry.
+
+!? datadef products
+!fname: product_id, type: number, label: "Product ID", required: true
+!fname: name, type: text, label: "Product Name", required: true
+!fname: category, type: text, label: "Category", required: true
+!fname: price, type: number, label: "Price (USD)", format: "currency"
+!fname: description, type: text, label: "Description"
+!fname: in_stock, type: boolean, label: "In Stock", format: "yes/no", required: true
+!fname: stock_quantity, type: number, label: "Stock Quantity"
+!fname: manufacturer, type: text, label: "Manufacturer"
+!fname: release_date, type: date, label: "Release Date", format: {"DD/MM/YYYY", "DD MMM YYYY"}
+!fname: weight_kg, type: number, label: "Weight (kg)", format: "n.## kg"
+!fname: dimensions, type: text, label: "Dimensions (L×W×H cm)"
+!fname: warranty_months, type: number, label: "Warranty (months)"
+!fname: energy_rating, type: text, label: "Energy Rating"
+!index: "product_id"
+!index: "category+in_stock"
+!#
+
+## Electronics Catalog
+
+Our current electronics inventory:
+
+!? data products
+!product_id 1001
+!name Wireless Bluetooth Headphones
+!category Electronics
+!price 149.99
+!description Premium over-ear headphones with active noise cancellation and 30-hour battery life
+!in_stock yes
+!stock_quantity 45
+!manufacturer AudioTech Pro
+!release_date 15/03/2023
+!weight_kg 0.28
+!dimensions 18×16×8
+!warranty_months 24
+!energy_rating N/A
+!-
+!product_id 1002
+!name Smart Home Hub
+!category Electronics
+!price 199.99
+!description Central control unit for smart home devices with voice assistant integration
+!in_stock yes
+!stock_quantity 23
+!manufacturer SmartLiving
+!release_date 22/01/2023
+!weight_kg 0.45
+!dimensions 12×12×5
+!warranty_months 12
+!energy_rating A+
+!-
+!product_id 1003
+!name Wireless Gaming Mouse
+!category Electronics
+!price 79.99
+!description High-precision gaming mouse with customizable RGB lighting and 16000 DPI sensor
+!in_stock no
+!stock_quantity 0
+!manufacturer GameGear
+!release_date 08/06/2023
+!weight_kg 0.085
+!dimensions 12.8×6.7×4.2
+!warranty_months 18
+!energy_rating N/A
+!-
+!product_id 1004
+!name 4K USB-C Monitor
+!category Electronics
+!price 349.99
+!description 27-inch 4K monitor with USB-C connectivity and HDR support
+!in_stock yes
+!stock_quantity 12
+!manufacturer DisplayMax
+!release_date 10/04/2023
+!weight_kg 4.2
+!dimensions 61×36×22
+!warranty_months 36
+!energy_rating B
+!#
+
+## Home & Garden
+
+!? data products
+!product_id 2001
+!name Robotic Vacuum Cleaner
+!category Home & Garden
+!price 299.99
+!description Smart robotic vacuum with mapping technology and app control
+!in_stock yes
+!stock_quantity 18
+!manufacturer CleanBot
+!release_date 12/02/2023
+!weight_kg 3.1
+!dimensions 35×35×9
+!warranty_months 24
+!energy_rating A++
+!-
+!product_id 2002
+!name Smart Thermostat
+!category Home & Garden
+!price 189.99
+!description WiFi-enabled thermostat with learning capabilities and energy saving features
+!in_stock yes
+!stock_quantity 31
+!manufacturer EcoTemp
+!release_date 05/01/2023
+!weight_kg 0.18
+!dimensions 8.4×8.4×2.9
+!warranty_months 60
+!energy_rating A+++
+!-
+!product_id 2003
+!name LED Garden Spotlight Kit
+!category Home & Garden
+!price 129.99
+!description Set of 6 solar-powered LED spotlights for garden and landscape lighting
+!in_stock yes
+!stock_quantity 27
+!manufacturer SolarBright
+!release_date 28/03/2023
+!weight_kg 1.8
+!dimensions 15×8×8
+!warranty_months 24
+!energy_rating A+
+!#
+
+---
+
+*Product data managed with Markdown Data Extension format - perfect for version control and team collaboration.*`;
+
+            document.getElementById('markdownInput').value = freeformMarkdown;
             parseMarkdown();
         };
 
