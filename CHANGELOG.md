@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.5] - 2025-06-27
+
+### Added
+- **Block-based data structure** - JSON output now groups data by blocks with sequential block numbers and record numbers within each block. Each block contains a `blockNumber`, `schemaName`, and array of numbered `records`.
+- **Enhanced record tracking** - Added `blockNumber` and `recordNumber` fields to DataEntry interface for comprehensive data organization and reference.
+- **Schema-based total counting** - Added `totalRecords` object with per-schema record counts plus overall total count for better data analysis.
+
+### Changed
+- **JSON output format** - Restructured data output to use new `blockData` structure with `blocks` array and `totalRecords` object while maintaining backward compatibility with legacy flat `data` structure.
+- **Test interface enhancements** - Updated both test.html and test-umd.html to display new block-based JSON structure with proper record numbering and totals.
+
+### Technical
+- **New TypeScript interfaces** - Added `DataBlock`, `BlockGroupedData`, and `TotalRecords` interfaces for structured data representation.
+- **Enhanced parser state** - Modified ParserState to track data by blocks instead of only flat schema grouping.
+- **Backward compatibility** - Maintained existing flat data structure alongside new block-based structure to ensure no breaking changes.
+
 ## [0.2.4] - 2025-06-27
 
 ### Fixed
