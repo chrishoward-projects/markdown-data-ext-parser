@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.4] - 2025-06-27
+
+### Fixed
+- **Consistent error context fields** - All errors and warnings now consistently include `blockNumber`, `blockType`, and `schemaName` fields when available. Previously, some errors were missing block context while others included it, leading to inconsistent programmatic error handling.
+
+### Changed
+- **Enhanced test interface** - "Validate Only" button in test-umd.html now displays both human-readable validation summary and complete JSON output for better debugging and testing capabilities.
+
+### Technical
+- **Comprehensive block context propagation** - Updated entire parser hierarchy (BaseParser, DataParser, TableParser, FreeformParser, HeaderValidator) to accept and propagate block context information
+- **Improved error/warning creation** - All error and warning creation points now use consistent conditional spreading to include context fields
+- **Enhanced test coverage** - Added comprehensive tests verifying all three context fields appear consistently across different parser components
+
 ## [0.2.3] - 2025-06-26
 
 ### Added
