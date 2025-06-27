@@ -365,6 +365,9 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
       if (state.options.sourceFile) {
         result.schema.sourcePath = state.options.sourceFile;
       }
+      if (state.currentBlockNumber !== undefined) {
+        result.schema.blockNumber = state.currentBlockNumber;
+      }
       state.schemas.set(blockInfo.schemaName, result.schema);
       this.schemaCache.set(blockInfo.schemaName, result.schema);
       

@@ -62,6 +62,7 @@ export interface DataSchema {
   indexes: IndexDefinition[];
   sourcePath?: string;
   lineNumber?: number;
+  blockNumber?: number;
 }
 
 export interface DataEntry {

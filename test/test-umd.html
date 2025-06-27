@@ -579,7 +579,8 @@ Our current electronics inventory:
                         name,
                         fields: schema.fields,
                         indexes: schema.indexes,
-                        sourcePath: schema.sourcePath
+                        sourcePath: schema.sourcePath,
+                        blockNumber: schema.blockNumber
                     })),
                     data: {
                         blocks: result.blockData.blocks.map(block => ({
@@ -657,7 +658,8 @@ Our current electronics inventory:
                     name,
                     fields: schema.fields,
                     indexes: schema.indexes,
-                    sourcePath: schema.sourcePath
+                    sourcePath: schema.sourcePath,
+                    blockNumber: schema.blockNumber
                 })),
                 data: {
                     blocks: result.blockData.blocks.map(block => ({
