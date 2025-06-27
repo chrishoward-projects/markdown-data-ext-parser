@@ -300,7 +300,7 @@ export class SchemaParser {
       message: details.message || formatErrorMessage(type, details),
       lineNumber,
       ...(details.fieldName && { fieldName: details.fieldName }),
-      ...(details.schemaName && { schemaName: details.schemaName }),
+      ...(details.schemaName !== undefined && { schemaName: details.schemaName }),
       ...(blockContext?.blockNumber !== undefined && { blockNumber: blockContext.blockNumber }),
       ...(blockContext?.blockType && { blockType: blockContext.blockType })
     });
@@ -317,7 +317,7 @@ export class SchemaParser {
       message: details.message || formatErrorMessage(type, details),
       lineNumber,
       ...(details.fieldName && { fieldName: details.fieldName }),
-      ...(details.schemaName && { schemaName: details.schemaName }),
+      ...(details.schemaName !== undefined && { schemaName: details.schemaName }),
       ...(blockContext?.blockNumber !== undefined && { blockNumber: blockContext.blockNumber }),
       ...(blockContext?.blockType && { blockType: blockContext.blockType })
     });

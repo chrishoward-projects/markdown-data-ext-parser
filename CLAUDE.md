@@ -124,6 +124,14 @@ Each parser is stateless and independent, enabling parallel processing and testi
 
 ## Development Workflow
 
+### Task Execution Philosophy
+- **Do ONLY what is asked** - no scope creep or "helpful" extras
+- **Identify other issues** while working, but **add them to todo list** instead of fixing
+- **Ask before expanding scope** - if related work seems needed, ask first
+- **Prefer working code over perfect code** - warnings that don't break functionality can stay
+- **Be surgical with changes** - minimize modifications to achieve the goal
+
+### Standard Workflow
 1. **After code changes**: Run `npm run lint` and `npm run typecheck`
 2. **Before committing**: Ensure tests pass with `npm test`
 3. **Version updates**: Use `npm run update-version` (handles version bump + build)
