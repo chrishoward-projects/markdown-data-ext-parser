@@ -82,7 +82,6 @@ export interface ParseError {
   sourceFile?: string;
   blockNumber?: number;
   blockType?: 'datadef' | 'data';
-  blockContext?: string;
 }
 
 export interface ParseWarning {
@@ -94,7 +93,6 @@ export interface ParseWarning {
   sourceFile?: string;
   blockNumber?: number;
   blockType?: 'datadef' | 'data';
-  blockContext?: string;
 }
 
 export interface ParseOptions {
@@ -197,7 +195,6 @@ export interface ParserState {
   currentSchema?: DataSchema;
   blockCounter: number;
   currentBlockNumber?: number;
-  currentBlockContext?: string;
   schemas: Map<string, DataSchema>;
   data: Map<string, DataEntry[]>;
   errors: ParseError[];

@@ -22,7 +22,7 @@ export class SchemaParser {
   private current: number = 0;
   private errors: ParseError[] = [];
   private warnings: ParseError[] = [];
-  private blockContext?: { blockNumber?: number; blockType?: 'datadef' | 'data'; blockContext?: string };
+  private blockContext: { blockNumber?: number; blockType?: 'datadef' | 'data'; } | undefined;
 
   constructor(tokens: Token[]) {
     this.tokens = tokens;
@@ -31,12 +31,12 @@ export class SchemaParser {
   parseSchema(
     schemaName: string, 
     startLine: number, 
-    blockContext?: { blockNumber?: number; blockType?: 'datadef' | 'data'; blockContext?: string }
+    blockContext?: { blockNumber?: number; blockType?: 'datadef' | 'data'; }
   ): { schema: DataSchema | null; errors: ParseError[]; warnings: ParseError[] } {
     this.current = 0;
     this.errors = [];
     this.warnings = [];
-    this.blockContext = blockContext;
+    this.blockContext = blockContext || undefined;
 
     const schema: DataSchema = {
       name: schemaName,
@@ -108,7 +108,6 @@ export class SchemaParser {
     if (parts.typeString && !this.isValidDataType(parts.typeString)) {
       this.addWarning(ErrorType.INVALID_DATA_TYPE, token.position.line, {
         fieldName: parts.name,
-        actual: parts.typeString,
         message: `Invalid data type "${parts.typeString}" for field "${parts.name}" - defaulting to text`
       }, this.blockContext);
     }
@@ -129,8 +128,8 @@ export class SchemaParser {
     type?: DataType;
     typeString?: string;
     label?: string;
-    format?: string | import('./types.js').DualFormat;
-    validation?: import('./types.js').ValidationRules;
+    format?: string | import('../types.js').DualFormat;
+    validation?: import('../types.js').ValidationRules;
     required?: boolean;
   } {
     const parts: Record<string, string> = {};
@@ -293,17 +292,16 @@ export class SchemaParser {
     type: ErrorType, 
     lineNumber: number, 
     details: { message?: string; fieldName?: string; schemaName?: string },
-    blockContext?: { blockNumber?: number; blockType?: 'datadef' | 'data'; blockContext?: string }
+    blockContext?: { blockNumber?: number; blockType?: 'datadef' | 'data'; }
   ): void {
     this.errors.push({
       type,
-      message: details.message || formatErrorMessage(type, { ...details, blockContext: blockContext?.blockContext }),
+      message: details.message || formatErrorMessage(type, details),
       lineNumber,
       fieldName: details.fieldName,
       schemaName: details.schemaName,
       blockNumber: blockContext?.blockNumber,
-      blockType: blockContext?.blockType,
-      blockContext: blockContext?.blockContext
+      blockType: blockContext?.blockType
     });
   }
 
@@ -311,17 +309,16 @@ export class SchemaParser {
     type: ErrorType, 
     lineNumber: number, 
     details: { message?: string; fieldName?: string; schemaName?: string },
-    blockContext?: { blockNumber?: number; blockType?: 'datadef' | 'data'; blockContext?: string }
+    blockContext?: { blockNumber?: number; blockType?: 'datadef' | 'data'; }
   ): void {
     this.warnings.push({
       type,
-      message: details.message || formatErrorMessage(type, { ...details, blockContext: blockContext?.blockContext }),
+      message: details.message || formatErrorMessage(type, details),
       lineNumber,
       fieldName: details.fieldName,
       schemaName: details.schemaName,
       blockNumber: blockContext?.blockNumber,
-      blockType: blockContext?.blockType,
-      blockContext: blockContext?.blockContext
+      blockType: blockContext?.blockType
     });
   }
 }

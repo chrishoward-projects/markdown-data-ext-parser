@@ -11,7 +11,9 @@ import {
   TokenType,
   ErrorType,
   BlockInfo,
-  ParserState
+  ParserState,
+  ParseError,
+  ParseWarning
 } from './types.js';
 import { Tokenizer } from './tokenizer.js';
 import { SchemaParser, validateSchemaDefinition } from './parsers/schema.js';
@@ -174,31 +176,28 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
 
   private addErrorWithContext(
     state: ParserState, 
-    error: Omit<ParseError, 'blockNumber' | 'blockType' | 'blockContext'>
+    error: Omit<ParseError, 'blockNumber' | 'blockType'>
   ): void {
     const errorWithContext: ParseError = {
       ...error,
       message: error.message || formatErrorMessage(error.type, { 
         fieldName: error.fieldName, 
-        schemaName: error.schemaName, 
-        blockContext: state.currentBlockContext 
+        schemaName: error.schemaName
       }),
       blockNumber: state.currentBlockNumber,
-      blockType: state.currentBlockType,
-      blockContext: state.currentBlockContext
+      blockType: state.currentBlockType
     };
     state.errors.push(errorWithContext);
   }
 
   private addWarningWithContext(
     state: ParserState, 
-    warning: Omit<ParseWarning, 'blockNumber' | 'blockType' | 'blockContext'>
+    warning: Omit<ParseWarning, 'blockNumber' | 'blockType'>
   ): void {
     const warningWithContext: ParseWarning = {
       ...warning,
       blockNumber: state.currentBlockNumber,
-      blockType: state.currentBlockType,
-      blockContext: state.currentBlockContext
+      blockType: state.currentBlockType
     };
     state.warnings.push(warningWithContext);
   }
@@ -234,7 +233,7 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
           state.currentSchemaName = blockInfo.schemaName;
           state.blockCounter++;
           state.currentBlockNumber = state.blockCounter;
-          state.currentBlockContext = `${state.blockCounter} ${blockInfo.type} ${blockInfo.schemaName}`;
+          // Block context removed for cleaner error reporting
         }
       } else if (token.type === TokenType.BLOCK_END) {
         if (!state.inBlock || !currentBlock) {
@@ -272,7 +271,7 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
           delete state.currentBlockType;
           delete state.currentSchemaName;
           delete state.currentBlockNumber;
-          delete state.currentBlockContext;
+          // Block context cleanup no longer needed
         }
       } else if (state.inBlock) {
         currentTokens.push(token);
@@ -352,8 +351,7 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
     const schemaParser = new SchemaParser(tokens);
     const blockContext = {
       blockNumber: state.currentBlockNumber,
-      blockType: state.currentBlockType,
-      blockContext: state.currentBlockContext
+      blockType: state.currentBlockType
     };
     const result = schemaParser.parseSchema(blockInfo.schemaName, blockInfo.startLine, blockContext);
     
