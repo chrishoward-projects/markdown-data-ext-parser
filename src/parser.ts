@@ -181,11 +181,11 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
     const errorWithContext: ParseError = {
       ...error,
       message: error.message || formatErrorMessage(error.type, { 
-        fieldName: error.fieldName, 
-        schemaName: error.schemaName
+        fieldName: error.fieldName || undefined, 
+        schemaName: error.schemaName || undefined
       }),
-      blockNumber: state.currentBlockNumber,
-      blockType: state.currentBlockType
+      ...(state.currentBlockNumber !== undefined && { blockNumber: state.currentBlockNumber }),
+      ...(state.currentBlockType !== undefined && { blockType: state.currentBlockType })
     };
     state.errors.push(errorWithContext);
   }
@@ -196,8 +196,8 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
   ): void {
     const warningWithContext: ParseWarning = {
       ...warning,
-      blockNumber: state.currentBlockNumber,
-      blockType: state.currentBlockType
+      ...(state.currentBlockNumber !== undefined && { blockNumber: state.currentBlockNumber }),
+      ...(state.currentBlockType !== undefined && { blockType: state.currentBlockType })
     };
     state.warnings.push(warningWithContext);
   }
@@ -350,8 +350,8 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
   private processSchemaDefinition(blockInfo: BlockInfo, tokens: Token[], state: ParserState): void {
     const schemaParser = new SchemaParser(tokens);
     const blockContext = {
-      blockNumber: state.currentBlockNumber,
-      blockType: state.currentBlockType
+      ...(state.currentBlockNumber !== undefined && { blockNumber: state.currentBlockNumber }),
+      ...(state.currentBlockType !== undefined && { blockType: state.currentBlockType })
     };
     const result = schemaParser.parseSchema(blockInfo.schemaName, blockInfo.startLine, blockContext);
     

@@ -113,11 +113,11 @@ export class SchemaParser {
     }
 
     const field: FieldDefinition = {
-      name: parts.name,
+      name: parts.name || '',
       type: parts.type || DataType.TEXT,
-      label: parts.label,
-      format: parts.format,
-      required: parts.required
+      ...(parts.label && { label: parts.label }),
+      ...(parts.format && { format: parts.format }),
+      ...(parts.required !== undefined && { required: parts.required })
     };
 
     return field;
@@ -129,20 +129,21 @@ export class SchemaParser {
     typeString?: string;
     label?: string;
     format?: string | import('../types.js').DualFormat;
-    validation?: import('../types.js').ValidationRules;
+    validation?: any;
     required?: boolean;
   } {
     const parts: Record<string, string> = {};
     const components = fieldDefString.split(',').map(c => c.trim());
 
     // First component is always the field name
-    if (components.length > 0) {
-      parts.name = components[0];
+    if (components.length > 0 && components[0]) {
+      parts['name'] = components[0];
     }
 
     // Parse remaining components as key:value pairs
     for (let i = 1; i < components.length; i++) {
       const component = components[i];
+      if (!component) continue;
       const colonIndex = component.indexOf(':');
       
       if (colonIndex === -1) {
@@ -177,7 +178,7 @@ export class SchemaParser {
         for (let j = i + 1; j < components.length; j++) {
           value += ',' + components[j];
           i = j;
-          if (components[j].includes('}')) {
+          if (components[j] && components[j].includes('}')) {
             foundClose = true;
             break;
           }
@@ -195,22 +196,22 @@ export class SchemaParser {
 
     const result: ReturnType<typeof this.parseFieldComponents> = {};
 
-    if (parts.name) {
-      result.name = parts.name;
+    if (parts['name']) {
+      result.name = parts['name'];
     }
 
-    if (parts.type) {
-      result.typeString = parts.type;
-      result.type = parseDataType(parts.type);
+    if (parts['type']) {
+      result.typeString = parts['type'];
+      result.type = parseDataType(parts['type']);
     }
 
-    if (parts.label) {
-      result.label = parts.label.replace(/^["']|["']$/g, '');
+    if (parts['label']) {
+      result.label = parts['label'].replace(/^["']|["']$/g, '');
     }
 
-    if (parts.format) {
+    if (parts['format']) {
       try {
-        result.format = parseFormat(parts.format);
+        result.format = parseFormat(parts['format']);
       } catch (error) {
         this.addError(ErrorType.MALFORMED_DUAL_FORMAT, lineNumber, {
           message: `Invalid format syntax: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -220,13 +221,13 @@ export class SchemaParser {
 
     // Skip validation rules - this parser focuses on structure, not data validation
 
-    if (parts.required) {
-      if (parts.required.toLowerCase() !== 'true' && parts.required.toLowerCase() !== 'false') {
+    if (parts['required']) {
+      if (parts['required'].toLowerCase() !== 'true' && parts['required'].toLowerCase() !== 'false') {
         this.addError(ErrorType.MALFORMED_FIELD_ATTRIBUTE, lineNumber, {
-          message: `Invalid required value "${parts.required}" - must be "true" or "false"`
+          message: `Invalid required value "${parts['required']}" - must be "true" or "false"`
         }, this.blockContext);
       }
-      result.required = parts.required.toLowerCase() === 'true';
+      result.required = parts['required'].toLowerCase() === 'true';
     }
 
     return result;
@@ -298,10 +299,10 @@ export class SchemaParser {
       type,
       message: details.message || formatErrorMessage(type, details),
       lineNumber,
-      fieldName: details.fieldName,
-      schemaName: details.schemaName,
-      blockNumber: blockContext?.blockNumber,
-      blockType: blockContext?.blockType
+      ...(details.fieldName && { fieldName: details.fieldName }),
+      ...(details.schemaName && { schemaName: details.schemaName }),
+      ...(blockContext?.blockNumber !== undefined && { blockNumber: blockContext.blockNumber }),
+      ...(blockContext?.blockType && { blockType: blockContext.blockType })
     });
   }
 
@@ -315,10 +316,10 @@ export class SchemaParser {
       type,
       message: details.message || formatErrorMessage(type, details),
       lineNumber,
-      fieldName: details.fieldName,
-      schemaName: details.schemaName,
-      blockNumber: blockContext?.blockNumber,
-      blockType: blockContext?.blockType
+      ...(details.fieldName && { fieldName: details.fieldName }),
+      ...(details.schemaName && { schemaName: details.schemaName }),
+      ...(blockContext?.blockNumber !== undefined && { blockNumber: blockContext.blockNumber }),
+      ...(blockContext?.blockType && { blockType: blockContext.blockType })
     });
   }
 }
@@ -332,7 +333,7 @@ export function validateSchemaDefinition(schema: DataSchema): ParseError[] {
       type: ErrorType.SYNTAX_ERROR,
       message: `Schema '${schema.name}' has no fields defined`,
       schemaName: schema.name,
-      lineNumber: schema.lineNumber
+      ...(schema.lineNumber !== undefined && { lineNumber: schema.lineNumber })
     });
   }
 
@@ -345,7 +346,7 @@ export function validateSchemaDefinition(schema: DataSchema): ParseError[] {
         message: `Invalid field name '${field.name}' in schema '${schema.name}'`,
         fieldName: field.name,
         schemaName: schema.name,
-        lineNumber: schema.lineNumber
+        ...(schema.lineNumber !== undefined && { lineNumber: schema.lineNumber })
       });
     }
 
@@ -357,7 +358,7 @@ export function validateSchemaDefinition(schema: DataSchema): ParseError[] {
           message: `Invalid date format '${field.format}' for field '${field.name}'`,
           fieldName: field.name,
           schemaName: schema.name,
-          lineNumber: schema.lineNumber
+          ...(schema.lineNumber !== undefined && { lineNumber: schema.lineNumber })
         });
       }
 
@@ -367,7 +368,7 @@ export function validateSchemaDefinition(schema: DataSchema): ParseError[] {
           message: `Invalid time format '${field.format}' for field '${field.name}'`,
           fieldName: field.name,
           schemaName: schema.name,
-          lineNumber: schema.lineNumber
+          ...(schema.lineNumber !== undefined && { lineNumber: schema.lineNumber })
         });
       }
     }
@@ -383,7 +384,7 @@ export function validateSchemaDefinition(schema: DataSchema): ParseError[] {
           message: `Index '${index.name}' references unknown field '${fieldName}'`,
           fieldName: fieldName,
           schemaName: schema.name,
-          lineNumber: schema.lineNumber
+          ...(schema.lineNumber !== undefined && { lineNumber: schema.lineNumber })
         });
       }
     }
