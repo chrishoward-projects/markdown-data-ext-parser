@@ -70,6 +70,8 @@ export interface DataEntry {
   lineNumber?: number;
   sourceFile?: string;
   recordIndex?: number;
+  blockNumber?: number;
+  recordNumber?: number;
 }
 
 export interface ParseError {
@@ -103,9 +105,26 @@ export interface ParseOptions {
   sourceFile?: string;
 }
 
+export interface DataBlock {
+  blockNumber: number;
+  schemaName: string;
+  records: DataEntry[];
+}
+
+export interface TotalRecords {
+  [schemaName: string]: number;
+  total: number;
+}
+
+export interface BlockGroupedData {
+  blocks: DataBlock[];
+  totalRecords: TotalRecords;
+}
+
 export interface ParseResult {
   schemas: Map<string, DataSchema>;
   data: Map<string, DataEntry[]>;
+  blockData: BlockGroupedData;
   errors: ParseError[];
   warnings: ParseWarning[];
   metadata: {
@@ -195,8 +214,10 @@ export interface ParserState {
   currentSchema?: DataSchema;
   blockCounter: number;
   currentBlockNumber?: number;
+  currentRecordNumber?: number;
   schemas: Map<string, DataSchema>;
   data: Map<string, DataEntry[]>;
+  blocks: DataBlock[];
   errors: ParseError[];
   warnings: ParseWarning[];
   options: ParseOptions;

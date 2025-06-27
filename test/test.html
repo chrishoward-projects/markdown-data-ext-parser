@@ -660,14 +660,18 @@ Our current electronics inventory:
                     indexes: schema.indexes,
                     sourcePath: schema.sourcePath
                 })),
-                data: Array.from(result.data.entries()).map(([schemaName, entries]) => ({
-                    schemaName,
-                    entries: entries.map(entry => ({
-                        fields: Object.fromEntries(entry.fields),
-                        lineNumber: entry.lineNumber,
-                        recordIndex: entry.recordIndex
-                    }))
-                })),
+                data: {
+                    blocks: result.blockData.blocks.map(block => ({
+                        blockNumber: block.blockNumber,
+                        schemaName: block.schemaName,
+                        records: block.records.map(record => ({
+                            recordNumber: record.recordNumber,
+                            fields: Object.fromEntries(record.fields),
+                            lineNumber: record.lineNumber
+                        }))
+                    })),
+                    totalRecords: result.blockData.totalRecords
+                },
                 errors: result.errors,
                 warnings: result.warnings
             };

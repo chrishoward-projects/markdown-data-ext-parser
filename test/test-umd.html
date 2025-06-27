@@ -581,14 +581,18 @@ Our current electronics inventory:
                         indexes: schema.indexes,
                         sourcePath: schema.sourcePath
                     })),
-                    data: Array.from(result.data.entries()).map(([schemaName, entries]) => ({
-                        schemaName,
-                        entries: entries.map(entry => ({
-                            fields: Object.fromEntries(entry.fields),
-                            lineNumber: entry.lineNumber,
-                            recordIndex: entry.recordIndex
-                        }))
-                    })),
+                    data: {
+                        blocks: result.blockData.blocks.map(block => ({
+                            blockNumber: block.blockNumber,
+                            schemaName: block.schemaName,
+                            records: block.records.map(record => ({
+                                recordNumber: record.recordNumber,
+                                fields: Object.fromEntries(record.fields),
+                                lineNumber: record.lineNumber
+                            }))
+                        })),
+                        totalRecords: result.blockData.totalRecords
+                    },
                     errors: result.errors,
                     warnings: result.warnings
                 };
@@ -648,16 +652,25 @@ Our current electronics inventory:
 
             // Clean result for JSON display
             const cleanResult = {
+                metadata: result.metadata,
                 schemas: Array.from(result.schemas.entries()).map(([name, schema]) => ({
                     name,
                     fields: schema.fields,
-                    indexes: schema.indexes
+                    indexes: schema.indexes,
+                    sourcePath: schema.sourcePath
                 })),
-                data: Array.from(result.data.entries()).map(([schemaName, entries]) => ({
-                    schemaName,
-                    entries: entries.map(entry => Object.fromEntries(entry.fields))
-                })),
-                metadata: result.metadata,
+                data: {
+                    blocks: result.blockData.blocks.map(block => ({
+                        blockNumber: block.blockNumber,
+                        schemaName: block.schemaName,
+                        records: block.records.map(record => ({
+                            recordNumber: record.recordNumber,
+                            fields: Object.fromEntries(record.fields),
+                            lineNumber: record.lineNumber
+                        }))
+                    })),
+                    totalRecords: result.blockData.totalRecords
+                },
                 errors: result.errors,
                 warnings: result.warnings
             };

@@ -44,6 +44,7 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
       blockCounter: 0,
       schemas: new Map(),
       data: new Map(),
+      blocks: [],
       errors: [],
       warnings: [],
       options: mergedOptions
@@ -73,10 +74,14 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
 
     const parseTime = Date.now() - startTime;
     const totalDataEntries = Array.from(state.data.values()).reduce((sum, entries) => sum + entries.length, 0);
+    
+    // Generate block-grouped data and totals
+    const blockData = this.generateBlockData(state.blocks);
 
     return {
       schemas: state.schemas,
       data: state.data,
+      blockData,
       errors: state.errors,
       warnings: state.warnings,
       metadata: {
@@ -104,6 +109,7 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
       return {
         schemas: new Map(),
         data: new Map(),
+        blockData: { blocks: [], totalRecords: { total: 0 } },
         errors: [{
           type: ErrorType.EXTERNAL_REFERENCE_FAILED,
           message: `Failed to read file: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -398,11 +404,47 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
     const dataParser = new DataParser(tokens, schema, blockInfo.schemaName, blockContext);
     const result = dataParser.parseData();
     
-    // Add to state
+    // Add block and record numbers to data entries
+    const enhancedData = result.data.map((entry, index) => ({
+      ...entry,
+      blockNumber: state.currentBlockNumber,
+      recordNumber: index + 1
+    })) as DataEntry[];
+    
+    // Add to legacy flat data structure
     const existingData = state.data.get(blockInfo.schemaName) || [];
-    state.data.set(blockInfo.schemaName, [...existingData, ...result.data]);
+    state.data.set(blockInfo.schemaName, [...existingData, ...enhancedData]);
+    
+    // Add to new block structure
+    if (enhancedData.length > 0 && state.currentBlockNumber !== undefined) {
+      state.blocks.push({
+        blockNumber: state.currentBlockNumber,
+        schemaName: blockInfo.schemaName,
+        records: enhancedData
+      });
+    }
+    
     state.errors.push(...result.errors);
   }
 
+  private generateBlockData(blocks: import('./types.js').DataBlock[]): import('./types.js').BlockGroupedData {
+    // Calculate totals by schema
+    const schemaTotals: { [schemaName: string]: number } = {};
+    let grandTotal = 0;
+
+    for (const block of blocks) {
+      const count = block.records.length;
+      schemaTotals[block.schemaName] = (schemaTotals[block.schemaName] || 0) + count;
+      grandTotal += count;
+    }
+
+    return {
+      blocks,
+      totalRecords: {
+        ...schemaTotals,
+        total: grandTotal
+      }
+    };
+  }
 
 }
