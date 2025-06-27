@@ -391,7 +391,11 @@ export class MarkdownDataExtensionParser implements MarkdownDataParser {
       return;
     }
 
-    const dataParser = new DataParser(tokens, schema, blockInfo.schemaName);
+    const blockContext = {
+      ...(state.currentBlockNumber !== undefined && { blockNumber: state.currentBlockNumber }),
+      ...(state.currentBlockType !== undefined && { blockType: state.currentBlockType })
+    };
+    const dataParser = new DataParser(tokens, schema, blockInfo.schemaName, blockContext);
     const result = dataParser.parseData();
     
     // Add to state

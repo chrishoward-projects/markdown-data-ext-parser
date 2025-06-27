@@ -9,7 +9,13 @@ export class HeaderValidator {
   /**
    * Validates table headers against schema definition
    */
-  validateHeaders(headers: string[], schema: DataSchema, schemaName: string, lineNumber: number): ParseError[] {
+  validateHeaders(
+    headers: string[], 
+    schema: DataSchema, 
+    schemaName: string, 
+    lineNumber: number,
+    blockContext?: { blockNumber?: number; blockType?: 'datadef' | 'data' }
+  ): ParseError[] {
     const errors: ParseError[] = [];
     const schemaFieldNames = new Set(schema.fields.map(f => f.name));
     
@@ -20,7 +26,9 @@ export class HeaderValidator {
           message: `Header '${header}' does not match any field in schema '${schemaName}'`,
           fieldName: header,
           schemaName: schemaName,
-          lineNumber: lineNumber
+          lineNumber: lineNumber,
+          ...(blockContext?.blockNumber !== undefined && { blockNumber: blockContext.blockNumber }),
+          ...(blockContext?.blockType && { blockType: blockContext.blockType })
         });
       }
     }
@@ -31,7 +39,11 @@ export class HeaderValidator {
   /**
    * Parses and validates table header syntax
    */
-  parseTableHeader(headerLine: string, lineNumber: number): { headers: string[]; errors: ParseError[] } {
+  parseTableHeader(
+    headerLine: string, 
+    lineNumber: number,
+    blockContext?: { blockNumber?: number; blockType?: 'datadef' | 'data' }
+  ): { headers: string[]; errors: ParseError[] } {
     const headers: string[] = [];
     const errors: ParseError[] = [];
     
@@ -40,7 +52,9 @@ export class HeaderValidator {
       errors.push({
         type: ErrorType.INVALID_TABLE_SYNTAX,
         message: 'Table header must start and end with pipe (|) character',
-        lineNumber: lineNumber
+        lineNumber: lineNumber,
+        ...(blockContext?.blockNumber !== undefined && { blockNumber: blockContext.blockNumber }),
+        ...(blockContext?.blockType && { blockType: blockContext.blockType })
       });
     }
     
@@ -51,7 +65,9 @@ export class HeaderValidator {
       errors.push({
         type: ErrorType.INVALID_TABLE_SYNTAX,
         message: 'Table header contains no field definitions',
-        lineNumber: lineNumber
+        lineNumber: lineNumber,
+        ...(blockContext?.blockNumber !== undefined && { blockNumber: blockContext.blockNumber }),
+        ...(blockContext?.blockType && { blockType: blockContext.blockType })
       });
       return { headers, errors };
     }
@@ -63,7 +79,9 @@ export class HeaderValidator {
           errors.push({
             type: ErrorType.INVALID_TABLE_SYNTAX,
             message: 'Empty field name in table header (! with no field name)',
-            lineNumber: lineNumber
+            lineNumber: lineNumber,
+            ...(blockContext?.blockNumber !== undefined && { blockNumber: blockContext.blockNumber }),
+            ...(blockContext?.blockType && { blockType: blockContext.blockType })
           });
           continue;
         }

@@ -13,8 +13,13 @@ import { BaseParser } from './base.js';
  */
 export class TableParser extends BaseParser {
 
-  constructor(tokens: Token[], schema: DataSchema, schemaName: string) {
-    super(tokens, schema, schemaName);
+  constructor(
+    tokens: Token[], 
+    schema: DataSchema, 
+    schemaName: string,
+    blockContext?: { blockNumber?: number; blockType?: 'datadef' | 'data' }
+  ) {
+    super(tokens, schema, schemaName, blockContext);
   }
 
   /**
@@ -31,7 +36,7 @@ export class TableParser extends BaseParser {
       const token = this.advance();
       
       if (token.type === TokenType.TABLE_HEADER) {
-        const headerResult = this.headerValidator.parseTableHeader(token.value, token.position.line);
+        const headerResult = this.headerValidator.parseTableHeader(token.value, token.position.line, this.blockContext);
         headers = headerResult.headers;
         this.errors.push(...headerResult.errors);
         headerLineNumber = token.position.line;
@@ -52,7 +57,7 @@ export class TableParser extends BaseParser {
     }
 
     // Validate headers against schema
-    const headerValidationErrors = this.headerValidator.validateHeaders(headers, this.schema, this.schemaName, headerLineNumber);
+    const headerValidationErrors = this.headerValidator.validateHeaders(headers, this.schema, this.schemaName, headerLineNumber, this.blockContext);
     this.errors.push(...headerValidationErrors);
 
     // Skip separator row (|---|---|---|)

@@ -20,12 +20,19 @@ export abstract class BaseParser {
   protected schema: DataSchema;
   protected schemaName: string;
   protected headerValidator: HeaderValidator;
+  protected blockContext?: { blockNumber?: number; blockType?: 'datadef' | 'data' };
 
-  constructor(tokens: Token[], schema: DataSchema, schemaName: string) {
+  constructor(
+    tokens: Token[], 
+    schema: DataSchema, 
+    schemaName: string,
+    blockContext?: { blockNumber?: number; blockType?: 'datadef' | 'data' }
+  ) {
     this.tokens = tokens;
     this.schema = schema;
     this.schemaName = schemaName;
     this.headerValidator = new HeaderValidator();
+    this.blockContext = blockContext;
   }
 
   /**
@@ -95,8 +102,12 @@ export abstract class BaseParser {
       type,
       message: details.message || formatErrorMessage(type, details),
       lineNumber,
-      fieldName: details.fieldName,
-      schemaName: details.schemaName || this.schemaName
+      ...(details.fieldName && { fieldName: details.fieldName }),
+      ...(((details.schemaName !== undefined ? details.schemaName : this.schemaName) !== undefined) && { 
+        schemaName: details.schemaName !== undefined ? details.schemaName : this.schemaName 
+      }),
+      ...(this.blockContext?.blockNumber !== undefined && { blockNumber: this.blockContext.blockNumber }),
+      ...(this.blockContext?.blockType && { blockType: this.blockContext.blockType })
     });
   }
 

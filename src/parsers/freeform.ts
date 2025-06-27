@@ -13,8 +13,13 @@ import { BaseParser } from './base.js';
  */
 export class FreeformParser extends BaseParser {
 
-  constructor(tokens: Token[], schema: DataSchema, schemaName: string) {
-    super(tokens, schema, schemaName);
+  constructor(
+    tokens: Token[], 
+    schema: DataSchema, 
+    schemaName: string,
+    blockContext?: { blockNumber?: number; blockType?: 'datadef' | 'data' }
+  ) {
+    super(tokens, schema, schemaName, blockContext);
   }
 
   /**

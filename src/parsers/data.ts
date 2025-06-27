@@ -20,11 +20,18 @@ export class DataParser {
   private errors: ParseError[] = [];
   private schema: DataSchema;
   private schemaName: string;
+  private blockContext?: { blockNumber?: number; blockType?: 'datadef' | 'data' };
 
-  constructor(tokens: Token[], schema: DataSchema, schemaName: string) {
+  constructor(
+    tokens: Token[], 
+    schema: DataSchema, 
+    schemaName: string,
+    blockContext?: { blockNumber?: number; blockType?: 'datadef' | 'data' }
+  ) {
     this.tokens = tokens;
     this.schema = schema;
     this.schemaName = schemaName;
+    this.blockContext = blockContext;
   }
 
   parseData(): { data: DataEntry[]; errors: ParseError[] } {
@@ -36,11 +43,11 @@ export class DataParser {
     const format = this.detectDataFormat();
     
     if (format === 'tabular') {
-      const tableParser = new TableParser(this.tokens, this.schema, this.schemaName);
+      const tableParser = new TableParser(this.tokens, this.schema, this.schemaName, this.blockContext);
       entries = tableParser.parseData();
       this.errors.push(...tableParser.getErrors());
     } else if (format === 'freeform') {
-      const freeformParser = new FreeformParser(this.tokens, this.schema, this.schemaName);
+      const freeformParser = new FreeformParser(this.tokens, this.schema, this.schemaName, this.blockContext);
       entries = freeformParser.parseData();
       this.errors.push(...freeformParser.getErrors());
     } else {
@@ -119,7 +126,11 @@ export class DataParser {
       message: details.message || formatErrorMessage(type, details),
       lineNumber,
       ...(details.fieldName && { fieldName: details.fieldName }),
-      schemaName: details.schemaName || this.schemaName
+      ...(((details.schemaName !== undefined ? details.schemaName : this.schemaName) !== undefined) && { 
+        schemaName: details.schemaName !== undefined ? details.schemaName : this.schemaName 
+      }),
+      ...(this.blockContext?.blockNumber !== undefined && { blockNumber: this.blockContext.blockNumber }),
+      ...(this.blockContext?.blockType && { blockType: this.blockContext.blockType })
     });
   }
 }

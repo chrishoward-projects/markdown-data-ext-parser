@@ -23,6 +23,7 @@ export class SchemaParser {
   private errors: ParseError[] = [];
   private warnings: ParseError[] = [];
   private blockContext: { blockNumber?: number; blockType?: 'datadef' | 'data'; } | undefined;
+  private currentSchemaName?: string;
 
   constructor(tokens: Token[]) {
     this.tokens = tokens;
@@ -37,6 +38,7 @@ export class SchemaParser {
     this.errors = [];
     this.warnings = [];
     this.blockContext = blockContext || undefined;
+    this.currentSchemaName = schemaName;
 
     const schema: DataSchema = {
       name: schemaName,
@@ -300,7 +302,9 @@ export class SchemaParser {
       message: details.message || formatErrorMessage(type, details),
       lineNumber,
       ...(details.fieldName && { fieldName: details.fieldName }),
-      ...(details.schemaName !== undefined && { schemaName: details.schemaName }),
+      ...((details.schemaName !== undefined ? details.schemaName : this.currentSchemaName) !== undefined && { 
+        schemaName: details.schemaName !== undefined ? details.schemaName : this.currentSchemaName 
+      }),
       ...(blockContext?.blockNumber !== undefined && { blockNumber: blockContext.blockNumber }),
       ...(blockContext?.blockType && { blockType: blockContext.blockType })
     });
@@ -317,7 +321,9 @@ export class SchemaParser {
       message: details.message || formatErrorMessage(type, details),
       lineNumber,
       ...(details.fieldName && { fieldName: details.fieldName }),
-      ...(details.schemaName !== undefined && { schemaName: details.schemaName }),
+      ...((details.schemaName !== undefined ? details.schemaName : this.currentSchemaName) !== undefined && { 
+        schemaName: details.schemaName !== undefined ? details.schemaName : this.currentSchemaName 
+      }),
       ...(blockContext?.blockNumber !== undefined && { blockNumber: blockContext.blockNumber }),
       ...(blockContext?.blockType && { blockType: blockContext.blockType })
     });
