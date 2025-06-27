@@ -137,6 +137,12 @@ Each parser is stateless and independent, enabling parallel processing and testi
 3. **Version updates**: Use `npm run update-version` (handles version bump + build)
 4. **Release process**: Manual using `npm run release` when ready
 
+### Build and Distribution Debugging
+- **When tests pass but browser/distribution behavior differs**: ALWAYS check if build is up to date first
+- Run `npm run build` before debugging distribution-specific issues
+- Stale build files are often the cause when development code works but distributed code doesn't
+- Don't debug the wrong thing - verify build freshness before diving into code investigation
+
 ## Build Outputs
 
 The library generates multiple build formats:

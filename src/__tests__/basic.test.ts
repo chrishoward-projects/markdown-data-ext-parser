@@ -222,4 +222,32 @@ describe('Basic functionality', () => {
       expect(invalidDataTypeWarning.blockType).toBe('datadef');
     }
   });
+
+  it('should include blockNumber and blockType in freeform parser errors', () => {
+    const markdown = `
+!? datadef products
+!fname: name, type: text
+!fname: manufacturer, type: text
+!#
+
+!? data products
+!name Product1
+!manufaturer InvalidCompany
+!#
+`;
+
+    const result = parser.parse(markdown);
+    expect(result.errors.length).toBeGreaterThan(0);
+    
+    // Find the invalid field name error from freeform parsing
+    const freeformError = result.errors.find(error => 
+      error.type === 'invalid_field_name' && error.fieldName === 'manufaturer'
+    );
+    
+    expect(freeformError).toBeDefined();
+    expect(freeformError?.schemaName).toBe('products');
+    expect(freeformError?.blockNumber).toBe(2);
+    expect(freeformError?.blockType).toBe('data');
+    expect(freeformError?.fieldName).toBe('manufaturer');
+  });
 });

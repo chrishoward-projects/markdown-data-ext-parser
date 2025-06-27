@@ -572,6 +572,34 @@ Our current electronics inventory:
                     }
                 }
                 
+                // Add JSON output section
+                const cleanResult = {
+                    metadata: result.metadata,
+                    schemas: Array.from(result.schemas.entries()).map(([name, schema]) => ({
+                        name,
+                        fields: schema.fields,
+                        indexes: schema.indexes,
+                        sourcePath: schema.sourcePath
+                    })),
+                    data: Array.from(result.data.entries()).map(([schemaName, entries]) => ({
+                        schemaName,
+                        entries: entries.map(entry => ({
+                            fields: Object.fromEntries(entry.fields),
+                            lineNumber: entry.lineNumber,
+                            recordIndex: entry.recordIndex
+                        }))
+                    })),
+                    errors: result.errors,
+                    warnings: result.warnings
+                };
+
+                // JSON Output
+                output += `
+                    <div class="json-output">
+                        <pre>${JSON.stringify(cleanResult, null, 2)}</pre>
+                    </div>
+                `;
+                
                 output += '</div>';
                 
                 document.getElementById('output').innerHTML = output;
