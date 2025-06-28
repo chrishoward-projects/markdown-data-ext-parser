@@ -135,6 +135,10 @@ export class SchemaParser {
     required?: boolean;
   } {
     const parts: Record<string, string> = {};
+    
+    // First, validate for missing commas by checking for common attribute patterns
+    this.validateFieldSyntax(fieldDefString, lineNumber);
+    
     const components = fieldDefString.split(',').map(c => c.trim());
 
     // First component is always the field name
@@ -233,6 +237,72 @@ export class SchemaParser {
     }
 
     return result;
+  }
+
+  private validateFieldSyntax(fieldDefString: string, lineNumber: number): void {
+    // Check for common patterns that indicate missing commas between attributes
+    const validAttributeNames = ['type', 'label', 'format', 'valid', 'required'];
+    
+    // Look for pattern: quoted_value unquoted_attribute_name:
+    // This indicates a missing comma after a quoted value
+    const missingCommaPattern = /["'][^"']*["']\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g;
+    let match;
+    while ((match = missingCommaPattern.exec(fieldDefString)) !== null) {
+      const attributeName = match[1];
+      if (attributeName && validAttributeNames.includes(attributeName)) {
+        this.addError(ErrorType.MALFORMED_FIELD_ATTRIBUTE, lineNumber, {
+          message: `Missing comma before "${attributeName}" attribute. Field attributes must be separated by commas.`
+        }, this.blockContext);
+        return; // Stop after first error to avoid confusing multiple messages
+      }
+    }
+    
+    // Look for pattern: unquoted_value unquoted_attribute_name:
+    // This is trickier but we can detect some cases
+    const components = fieldDefString.split(',');
+    for (let i = 0; i < components.length; i++) {
+      const component = components[i]?.trim();
+      if (!component) continue;
+      
+      // Skip the field name (first component)
+      if (i === 0) continue;
+      
+      // Check if this component has multiple colons (indicating merged attributes)
+      const colonCount = (component.match(/:/g) || []).length;
+      if (colonCount > 1) {
+        // Check if any of the segments before colons are valid attribute names
+        const segments = component.split(':');
+        for (let j = 1; j < segments.length - 1; j++) {
+          const potentialAttr = segments[j]?.trim().split(/\s+/).pop();
+          if (potentialAttr && validAttributeNames.includes(potentialAttr)) {
+            this.addError(ErrorType.MALFORMED_FIELD_ATTRIBUTE, lineNumber, {
+              message: `Missing comma before "${potentialAttr}" attribute. Field attributes must be separated by commas.`
+            }, this.blockContext);
+            return;
+          }
+        }
+      }
+      
+      // Check for quoted values followed by text without comma
+      if (component.includes('"') && !component.endsWith('"')) {
+        const quoteIndex = component.lastIndexOf('"');
+        if (quoteIndex > 0 && quoteIndex < component.length - 1) {
+          const afterQuote = component.substring(quoteIndex + 1).trim();
+          if (afterQuote.length > 0) {
+            // Check if the text after quote looks like an attribute
+            const words = afterQuote.split(/\s+/);
+            for (const word of words) {
+              if (validAttributeNames.includes(word)) {
+                this.addError(ErrorType.MALFORMED_FIELD_ATTRIBUTE, lineNumber, {
+                  message: `Missing comma before "${word}" attribute. Field attributes must be separated by commas.`
+                }, this.blockContext);
+                return;
+              }
+            }
+          }
+        }
+      }
+    }
   }
 
   private isValidDataType(typeString: string): boolean {
