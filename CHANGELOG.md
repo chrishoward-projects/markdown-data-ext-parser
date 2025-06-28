@@ -5,20 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.5] - 2025-06-27
+## [0.3.0] - 2025-06-28
 
 ### Added
 - **Block-based data structure** - JSON output now groups data by blocks with sequential block numbers and record numbers within each block. Each block contains a `blockNumber`, `schemaName`, and array of numbered `records`.
 - **Enhanced record tracking** - Added `blockNumber` and `recordNumber` fields to DataEntry interface for comprehensive data organization and reference.
 - **Schema-based total counting** - Added `totalRecords` object with per-schema record counts plus overall total count for better data analysis.
+- **Schema block tracking** - Added `blockNumber` field to DataSchema interface to track which block defined each schema.
 
 ### Changed
 - **JSON output format** - Restructured data output to use new `blockData` structure with `blocks` array and `totalRecords` object while maintaining backward compatibility with legacy flat `data` structure.
 - **Test interface enhancements** - Updated both test.html and test-umd.html to display new block-based JSON structure with proper record numbering and totals.
 
+### Fixed
+- **CRITICAL: Field definition comma validation** - Fixed parser bug where missing commas between field attributes were silently ignored, causing attribute values to be incorrectly merged. Parser now properly validates that commas are mandatory delimiters between all field attributes and throws clear error messages when commas are missing.
+
 ### Technical
 - **New TypeScript interfaces** - Added `DataBlock`, `BlockGroupedData`, and `TotalRecords` interfaces for structured data representation.
 - **Enhanced parser state** - Modified ParserState to track data by blocks instead of only flat schema grouping.
+- **Robust field validation** - Added comprehensive pattern detection for missing commas in field definitions with regex-based validation and clear error reporting.
 - **Backward compatibility** - Maintained existing flat data structure alongside new block-based structure to ensure no breaking changes.
 
 ## [0.2.4] - 2025-06-27
