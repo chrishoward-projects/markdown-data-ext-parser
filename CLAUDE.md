@@ -32,12 +32,14 @@ This is a TypeScript library for parsing Markdown Data Extension syntax. The arc
 - `MarkdownDataExtensionParser` - Main orchestrator class
 - Manages document-level parsing, schema caching, and result aggregation
 - Delegates to specialized parsers for different block types
+- Generates block-based data structure with sequential numbering and comprehensive tracking
 
 **Processing Pipeline**
 1. **Tokenizer (src/tokenizer.ts)** - Lexical analysis of markdown text
 2. **Block Identification** - Detects and validates block boundaries (`!? datadef/data` to `!#`)
 3. **Specialized Parsers** - Routes to schema or data parsers based on block type
-4. **Validation & Formatting** - Type conversion and data validation
+4. **Validation & Formatting** - Type conversion, comma delimiter validation, and data validation
+5. **Data Organization** - Groups results by blocks with sequential numbering and schema-based totals
 
 ### Parser Hierarchy
 
@@ -47,7 +49,7 @@ This is a TypeScript library for parsing Markdown Data Extension syntax. The arc
 - All specialized parsers extend this base
 
 **Specialized Parsers (src/parsers/)**
-- `SchemaParser` - Processes schema definition blocks (`!fname`, `!index`)
+- `SchemaParser` - Processes schema definition blocks (`!fname`, `!index`) with mandatory comma validation
 - `DataParser` - Orchestrator for data entry parsing
 - `TableParser` - Handles markdown table format data
 - `FreeformParser` - Handles field:value format data
@@ -64,10 +66,16 @@ This is a TypeScript library for parsing Markdown Data Extension syntax. The arc
 - `MarkdownDataFormatter` (src/formatter.ts) - Value formatting and parsing
 - `SchemaCache` (src/utils.ts) - Schema caching and management
 
+**Output Structure**
+- **Block-based organization** - Data grouped by sequential block numbers with record numbering
+- **Schema tracking** - Each schema includes blockNumber indicating where it was defined
+- **Comprehensive totals** - Per-schema record counts plus overall totals for analytics
+- **Backward compatibility** - Legacy flat data structure maintained alongside new block structure
+
 ### Data Flow Pattern
 
 ```
-Raw Markdown → Tokenizer → Block Parser → [Schema Parser | Data Parser] → Validation → Results
+Raw Markdown → Tokenizer → Block Parser → [Schema Parser | Data Parser] → Validation → Block Organization → Results
 ```
 
 Each parser is stateless and independent, enabling parallel processing and testing.
@@ -113,9 +121,10 @@ Each parser is stateless and independent, enabling parallel processing and testi
 ## Error Handling Philosophy
 
 **Structured Error Reporting**
-- Typed error categories (SYNTAX_ERROR, TYPE_MISMATCH, etc.)
+- Typed error categories (SYNTAX_ERROR, TYPE_MISMATCH, MALFORMED_FIELD_ATTRIBUTE, etc.)
 - Line number and context information for all errors
-- Block context tracking for nested error reporting
+- Block context tracking for nested error reporting (blockNumber, blockType, schemaName)
+- Mandatory comma delimiter validation with clear error messages
 
 **Graceful Degradation**
 - Continue parsing after recoverable errors

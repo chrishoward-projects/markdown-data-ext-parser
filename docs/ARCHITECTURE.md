@@ -272,12 +272,78 @@ Final Results
 ```
 Parsed Schemas + Data Entries + Errors
     ↓
+Block Organization & Numbering
+    ↓
+Data Analytics Calculation
+    ↓
 Result Aggregation
     ↓
-ParseResult Object
+ParseResult Object (with blockData + legacy data)
     ↓
 User Application
 ```
+
+**Block Organization Process:**
+1. Group data entries by their originating blocks
+2. Assign sequential block numbers and record numbers
+3. Calculate per-schema and overall totals
+4. Maintain legacy flat structure for backward compatibility
+
+## Data Organization Architecture (v0.3.0+)
+
+### Block-Based Structure
+
+The parser implements a dual data organization system:
+
+**1. Block-Based Structure (Primary)**
+```
+BlockGroupedData
+├── blocks: DataBlock[]
+│   ├── blockNumber: Sequential identifier
+│   ├── schemaName: Schema used by block
+│   └── records: DataEntry[] (with recordNumber)
+└── totalRecords: TotalRecords
+    ├── overall: Total count across all blocks
+    └── bySchema: Per-schema record counts
+```
+
+**2. Legacy Flat Structure (Backward Compatibility)**
+```
+Map<string, DataEntry[]>
+├── Key: Schema name
+└── Value: All entries for that schema (flat)
+```
+
+### Schema Tracking
+
+Each schema includes metadata about its definition context:
+```
+DataSchema
+├── blockNumber: Block where schema was defined
+├── lineNumber: Line where schema appears
+└── sourcePath: File containing the schema
+```
+
+### Error Context Enhancement
+
+All errors and warnings include comprehensive context:
+```
+ParseError/ParseWarning
+├── blockNumber: Block containing the error
+├── blockType: 'datadef' | 'data'
+├── schemaName: Related schema
+├── fieldName: Related field
+├── lineNumber: Exact line location
+└── message: Clear description with context
+```
+
+### Validation Integration
+
+The block-based structure enables:
+- Cross-block validation and analysis
+- Schema usage tracking and analytics
+- Performance optimization through block-level caching
+- Enhanced error reporting with block context
 
 ## Extension Points
 

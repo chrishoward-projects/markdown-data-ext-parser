@@ -383,7 +383,8 @@ interface ParseOptions {
 ```typescript
 interface ParseResult {
   schemas: Map<string, DataSchema>;    // Parsed schemas by name
-  data: Map<string, DataEntry[]>;      // Parsed data entries by schema name
+  data: Map<string, DataEntry[]>;      // Legacy flat data structure (maintained for compatibility)
+  blockData: BlockGroupedData;         // NEW: Block-based data structure
   errors: ParseError[];                // Parse and validation errors
   warnings: ParseWarning[];            // Non-fatal warnings
   metadata: {
@@ -392,6 +393,34 @@ interface ParseResult {
     schemasFound: number;              // Number of schemas found
     dataEntriesFound: number;          // Number of data entries found
   };
+}
+```
+
+### BlockGroupedData
+
+```typescript
+interface BlockGroupedData {
+  blocks: DataBlock[];                 // Data organized by blocks
+  totalRecords: TotalRecords;          // Comprehensive record counts
+}
+```
+
+### DataBlock
+
+```typescript
+interface DataBlock {
+  blockNumber: number;                 // Sequential block identifier
+  schemaName: string;                  // Schema used by this block
+  records: DataEntry[];                // Records with block and record numbers
+}
+```
+
+### TotalRecords
+
+```typescript
+interface TotalRecords {
+  overall: number;                     // Total records across all blocks
+  bySchema: Record<string, number>;    // Record count per schema
 }
 ```
 
@@ -404,6 +433,7 @@ interface DataSchema {
   indexes: IndexDefinition[];      // Index definitions
   sourcePath?: string;             // Source file path
   lineNumber?: number;             // Line number where schema was defined
+  blockNumber?: number;            // Block number where schema was defined
 }
 ```
 
@@ -436,7 +466,9 @@ interface DataEntry {
   fields: Map<string, unknown>;   // Field values
   lineNumber?: number;             // Source line number
   sourceFile?: string;             // Source file path
-  recordIndex?: number;            // Index within the data block
+  recordIndex?: number;            // Index within the data block (legacy)
+  blockNumber?: number;            // Block number containing this entry
+  recordNumber?: number;           // Record number within the block
 }
 ```
 
@@ -451,6 +483,8 @@ interface ParseError {
   schemaName?: string;             // Related schema name
   fieldName?: string;              // Related field name
   sourceFile?: string;             // Source file path
+  blockNumber?: number;            // Block number where error occurred
+  blockType?: 'datadef' | 'data';  // Type of block where error occurred
 }
 ```
 

@@ -4,12 +4,14 @@ A TypeScript library for parsing, validating, and processing documents containin
 
 ## Features
 
-- ✅ **Full syntax support** - Parse data definition and data entry blocks
+- ✅ **Full syntax support** - Parse data definition and data entry blocks with mandatory comma validation
 - ✅ **Type-safe** - Complete TypeScript interfaces with full type inference  
+- ✅ **Block-based data structure** - Organized output with sequential block and record numbering
 - ✅ **Data validation** - Validate data against schema definitions with comprehensive error reporting
 - ✅ **Multiple formats** - Support both tabular and free-form data entry formats
 - ✅ **External schemas** - Load and reference schemas from external files
 - ✅ **Format processing** - Transform and validate data types (text, number, date, time, boolean)
+- ✅ **Schema analytics** - Per-schema record counts and overall totals for data analysis
 - ✅ **Performance** - Parse large documents efficiently with caching support
 - ✅ **Browser & Node.js** - Works in both environments
 
@@ -47,8 +49,18 @@ const markdown = `
 const result = parser.parse(markdown);
 
 console.log('Schemas found:', result.schemas.size);
-console.log('Data entries:', result.data.get('employees')?.length);
+console.log('Data blocks:', result.blockData.blocks.length);
+console.log('Total records:', result.blockData.totalRecords.overall);
+console.log('Records by schema:', result.blockData.totalRecords.bySchema);
 console.log('Errors:', result.errors.length);
+
+// Access data using new block-based structure
+result.blockData.blocks.forEach(block => {
+  console.log(`Block ${block.blockNumber} (${block.schemaName}):`, block.records.length, 'records');
+});
+
+// Legacy flat structure still available for backward compatibility
+console.log('Legacy data entries:', result.data.get('employees')?.length);
 ```
 
 ## Testing
@@ -145,7 +157,8 @@ interface ParseOptions {
 ```typescript
 interface ParseResult {
   schemas: Map<string, DataSchema>;    // Parsed schemas by name
-  data: Map<string, DataEntry[]>;      // Parsed data entries by schema name
+  data: Map<string, DataEntry[]>;      // Legacy flat data structure (maintained for compatibility)
+  blockData: BlockGroupedData;         // NEW: Block-based data structure
   errors: ParseError[];                // Parse and validation errors
   warnings: ParseWarning[];            // Non-fatal warnings
   metadata: {
@@ -154,6 +167,22 @@ interface ParseResult {
     schemasFound: number;              // Number of schemas found
     dataEntriesFound: number;          // Number of data entries found
   };
+}
+
+interface BlockGroupedData {
+  blocks: DataBlock[];                 // Data organized by blocks
+  totalRecords: TotalRecords;          // Comprehensive record counts
+}
+
+interface DataBlock {
+  blockNumber: number;                 // Sequential block identifier
+  schemaName: string;                  // Schema used by this block
+  records: DataEntry[];                // Records with block and record numbers
+}
+
+interface TotalRecords {
+  overall: number;                     // Total records across all blocks
+  bySchema: Record<string, number>;    // Record count per schema
 }
 ```
 
@@ -287,6 +316,49 @@ The parser supports five core data types with comprehensive validation:
 !#
 ```
 
+### Block-Based Data Structure (v0.3.0+)
+
+The parser now provides data organized by blocks with comprehensive tracking:
+
+```typescript
+const result = parser.parse(markdown);
+
+// New block-based structure
+result.blockData.blocks.forEach(block => {
+  console.log(`Block ${block.blockNumber}:`);
+  console.log(`  Schema: ${block.schemaName}`);
+  console.log(`  Records: ${block.records.length}`);
+  
+  block.records.forEach(record => {
+    console.log(`    Record ${record.recordNumber}:`, Object.fromEntries(record.fields));
+  });
+});
+
+// Analytics and totals
+console.log('Total records:', result.blockData.totalRecords.overall);
+console.log('Records by schema:', result.blockData.totalRecords.bySchema);
+
+// Schema tracking - each schema includes its defining block
+result.schemas.forEach(schema => {
+  console.log(`Schema "${schema.name}" defined in block ${schema.blockNumber}`);
+});
+```
+
+### Field Definition Validation (v0.3.0+)
+
+The parser now enforces mandatory comma delimiters between field attributes:
+
+```typescript
+// ❌ INVALID - Missing comma between label and format
+!fname: weight_kg, type: number, label: "Weight (kg)" format: "n.## kg"
+
+// ✅ VALID - Proper comma separation
+!fname: weight_kg, type: number, label: "Weight (kg)", format: "n.## kg"
+
+// The parser will throw a clear error for missing commas:
+// "Missing comma before 'format' attribute. Field attributes must be separated by commas."
+```
+
 ### Error Handling
 
 The parser provides comprehensive error reporting with line numbers and context:
@@ -302,6 +374,9 @@ if (result.errors.length > 0) {
     }
     if (error.schemaName) {
       console.error(`  Schema: ${error.schemaName}`);
+    }
+    if (error.blockNumber) {
+      console.error(`  Block: ${error.blockNumber} (${error.blockType})`);
     }
   });
 }
