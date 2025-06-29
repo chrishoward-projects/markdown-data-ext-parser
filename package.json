@@ -1,6 +1,6 @@
 {
   "name": "@chrishoward-projects/markdown-data-ext-parser",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "TypeScript parser library for Markdown Data Extension syntax",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
