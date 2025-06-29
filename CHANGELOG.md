@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2025-06-29
+
+### Added
+- **GitHub Packages publishing** - Library is now published as `@chrishoward-projects/markdown-data-ext-parser` to GitHub Packages for private distribution across projects.
+
+### Fixed
+- **Format string parsing with commas** - Fixed incorrect validation error when field formats contained commas within quoted strings. Parser now properly handles formats like `"$n,n.##"` by respecting quote boundaries when splitting field attributes on commas.
+
+### Technical
+- **Enhanced comma splitting logic** - Added `splitRespectingQuotes()` method to schema parser that correctly handles both single and double quoted strings when parsing field attribute lists.
+- **Package configuration** - Updated package name, registry configuration, and authentication setup for GitHub Packages distribution.
+
 ## [0.3.0] - 2025-06-28
 
 ### Added
