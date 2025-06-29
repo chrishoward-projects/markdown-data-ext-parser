@@ -139,7 +139,7 @@ export class SchemaParser {
     // First, validate for missing commas by checking for common attribute patterns
     this.validateFieldSyntax(fieldDefString, lineNumber);
     
-    const components = fieldDefString.split(',').map(c => c.trim());
+    const components = this.splitRespectingQuotes(fieldDefString).map(c => c.trim());
 
     // First component is always the field name
     if (components.length > 0 && components[0]) {
@@ -397,6 +397,42 @@ export class SchemaParser {
       ...(blockContext?.blockNumber !== undefined && { blockNumber: blockContext.blockNumber }),
       ...(blockContext?.blockType && { blockType: blockContext.blockType })
     });
+  }
+
+  /**
+   * Split a string on commas while respecting quoted strings
+   * Handles both single and double quotes
+   */
+  private splitRespectingQuotes(str: string): string[] {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    let quoteChar = '';
+    
+    for (let i = 0; i < str.length; i++) {
+      const char = str[i];
+      
+      if (!inQuotes && (char === '"' || char === "'")) {
+        inQuotes = true;
+        quoteChar = char;
+        current += char;
+      } else if (inQuotes && char === quoteChar) {
+        inQuotes = false;
+        quoteChar = '';
+        current += char;
+      } else if (!inQuotes && char === ',') {
+        result.push(current);
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    
+    if (current) {
+      result.push(current);
+    }
+    
+    return result;
   }
 }
 
