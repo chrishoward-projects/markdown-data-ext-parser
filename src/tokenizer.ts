@@ -1,5 +1,5 @@
 import { Token, TokenType, TokenPosition, ParseError, ErrorType } from './types.js';
-import { isValidSchemaName, formatErrorMessage } from './utils.js';
+import { isValidSchemaName, isValidFieldName, formatErrorMessage } from './utils.js';
 
 export class Tokenizer {
   private text: string;
@@ -149,6 +149,15 @@ export class Tokenizer {
     
     // Regular field value !fieldname value
     const fieldName = this.readWord();
+    
+    // Validate that this is actually a valid field name pattern
+    if (!fieldName || !isValidFieldName(fieldName)) {
+      // This is not a valid field pattern, treat as regular text
+      // Reset position to just after the !
+      this.position = startPosition.offset + 1;
+      return this.createTokenAt(TokenType.TEXT, '!', startPosition);
+    }
+    
     this.skipWhitespace();
     const fieldValue = this.readRestOfLine().trim();
     
