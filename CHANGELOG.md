@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.2] - 2025-06-29
+
+### Fixed
+- **False positive field detection** - Fixed critical bug where lone exclamation marks in regular text (e.g., "system!") were incorrectly treated as field markers, causing false `missing_block_start` errors. Tokenizer now only recognizes field patterns within proper data blocks.
+
+### Technical
+- **Block-aware tokenization** - Added `inDataBlock` state tracking to tokenizer to ensure field patterns (`!fieldname`, `!fname:`, etc.) are only recognized inside data blocks between `!?` and `!#` markers.
+- **Context-sensitive parsing** - Lone `!` characters outside data blocks are now treated as regular text, preventing false positive errors while maintaining all correct field parsing functionality.
+
 ## [0.3.1] - 2025-06-29
 
 ### Added
