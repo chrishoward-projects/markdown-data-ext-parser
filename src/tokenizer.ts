@@ -7,6 +7,7 @@ export class Tokenizer {
   private line: number = 1;
   private column: number = 1;
   private errors: ParseError[] = [];
+  private inDataBlock: boolean = false;
 
   constructor(text: string) {
     this.text = text;
@@ -113,17 +114,33 @@ export class Tokenizer {
     }
     
     const value = `${blockType} ${schemaName}`.trim();
+    
+    // Update block state for both datadef and data blocks (both contain field patterns)
+    if (blockType === 'data' || blockType === 'datadef') {
+      this.inDataBlock = true;
+    }
+    
     return this.createTokenAt(TokenType.BLOCK_START, value, startPosition);
   }
 
   private readFieldOrSpecial(startPosition: TokenPosition): Token {
     this.advance(); // !
     
-    // Check for block end !#
+    // Check for block end !# (always recognized)
     if (this.peek() === '#') {
       this.advance();
+      this.inDataBlock = false; // Update block state
       return this.createTokenAt(TokenType.BLOCK_END, '!#', startPosition);
     }
+    
+    // If we're not in a data block, treat as regular text
+    if (!this.inDataBlock) {
+      // Reset position to just after the !
+      this.position = startPosition.offset + 1;
+      return this.createTokenAt(TokenType.TEXT, '!', startPosition);
+    }
+    
+    // From here on, we're inside a data block, so recognize field patterns
     
     // Check for record separator !-
     if (this.peek() === '-') {
@@ -152,8 +169,7 @@ export class Tokenizer {
     
     // Validate that this is actually a valid field name pattern
     if (!fieldName || !isValidFieldName(fieldName)) {
-      // This is not a valid field pattern, treat as regular text
-      // Reset position to just after the !
+      // Even inside a block, invalid field names are treated as text
       this.position = startPosition.offset + 1;
       return this.createTokenAt(TokenType.TEXT, '!', startPosition);
     }
