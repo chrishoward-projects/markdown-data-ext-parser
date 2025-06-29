@@ -1,5 +1,5 @@
 {
-  "name": "mdl-data-extension-parser",
+  "name": "@chrishoward-projects/markdown-data-ext-parser",
   "version": "0.3.0",
   "description": "TypeScript parser library for Markdown Data Extension syntax",
   "main": "dist/index.js",
@@ -8,6 +8,8 @@
   "browser": "dist/index.umd.js",
   "scripts": {
     "build": "rollup -c",
+    "build:browser": "rollup -c rollup.browser.config.js",
+    "build:all": "npm run build && npm run build:browser",
     "dev": "rollup -c -w",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -19,7 +21,8 @@
     "update-version": "npm version patch && npm run build",
     "release": "gh release create",
     "deploy": "npm run build",
-    "prepublishOnly": "npm run clean && npm run build"
+    "publish:github": "npm publish --registry=https://npm.pkg.github.com",
+    "prepublishOnly": "npm run clean && npm run build && npm test"
   },
   "files": [
     "dist",
@@ -37,9 +40,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/chrishoward/mdl-data-extension-parser.git"
+    "url": "https://github.com/chrishoward-projects/markdown-data-ext-parser.git"
   },
   "devDependencies": {
+    "@rollup/plugin-commonjs": "^28.0.6",
+    "@rollup/plugin-node-resolve": "^16.0.1",
     "@rollup/plugin-typescript": "^11.0.0",
     "@types/jest": "^29.5.0",
     "@types/node": "^20.0.0",
